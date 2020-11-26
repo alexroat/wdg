@@ -1,0 +1,20 @@
+{
+  "name": "wdg",
+  "version": "1.0.0",
+  "keywords": [
+    "frontend",
+    "widget",
+    "ui",
+    "client",
+    "browser"
+  ],
+  "author": "Alessandro Roat <alexroat@gmail.com>",
+  "contributors": [],
+  "dependencies": {},
+  "description": "A library for the object oriented UI composition",
+  "main": "wdg.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "license": "MIT"
+}

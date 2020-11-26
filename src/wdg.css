@@ -1,0 +1,78 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : 18-nov-2020, 13.03.38
+    Author     : alex
+*/
+
+* {
+    font-family: monospace;
+}
+
+.Container
+{
+    overflow: auto;
+}
+
+.TabHeader {
+    background: whitesmoke;
+}
+
+.TabbedView .TabHeader span {
+    background: lightgray;
+    border: 1px solid darkgrey;
+    border-bottom: none;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    padding: 3px;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.TabbedView .TabHeader span.active
+{
+    font-weight: bold;
+}
+
+.MobileTabHeader .itemlist div, .MobileTabHeader div
+{
+    cursor: pointer
+}
+.MobileTabHeader .itemlist
+{
+    z-index: 10000;
+    background: whitesmoke
+}
+
+table.Table
+{
+    overflow: auto;
+    display: block;
+    border-collapse: collapse;
+}
+
+table.Table.Wdg td, table.Table.Wdg  th {
+    border: 1px solid darkgray;
+    background: whitesmoke;
+}
+
+table.Table.Wdg  th {
+    background: lightgray;
+}
+
+tr td:nth-child(2) {
+    width: 0px;
+}
+
+.Carousel #next, .Carousel #prev {
+    z-index: 100;
+    padding: 10px;
+    font-size: 24px;
+    cursor: pointer;
+    background: whitesmoke;
+    border-radius: 20px;
+    margin: 0px 20px 0px 20px;
+}
