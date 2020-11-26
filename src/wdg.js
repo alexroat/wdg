@@ -1,8 +1,4 @@
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+import "./wdg.css";
 const cssSize = /(left|right|top|bottom|width|height|margin|border|padding|size)/i;
 function mergeObjs() {
     var r = {};
