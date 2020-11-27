@@ -617,6 +617,17 @@ export class ChildPicker extends Wdg
     }
 }
 
+class TabLabel extends Wdg
+{
+    constructor(props,c)
+    {
+        super(props)
+        const self=this;
+        this.text(c.props.title || c.constructor.name).on("click", function(){self.parent().parent().setCurrent(c);}).toggleClass("active", c.props.active || false);
+    }
+    
+}
+
 export class TabHeader extends ChildPicker
 {
     constructor(props)
@@ -627,16 +638,9 @@ export class TabHeader extends ChildPicker
     {
         const self = this;
         this.css({position: "absolute", left: 0, right: 0});
-        const pick = function (c) {
-            return function () {
-                if (self.parent().props.nocurrent && self.getCurrent() === c)
-                    c = null;
-                self.setCurrent(c);
-            }
-        };
         this.removeAll();
         for (var c of this.getItems())
-            new Wdg({}, "<span/>").text(c.props.title || c.constructor.name).appendTo(this).on("click", pick(c)).toggleClass("active", c.props.active || false);
+            new TabLabel({},c).appendTo(this);
         return super.doLayout()
     }
 
