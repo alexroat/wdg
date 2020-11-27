@@ -1,0 +1,24 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : 27-nov-2020, 15.06.22
+    Author     : alex
+*/
+
+.PageMock
+{
+    overflow:auto;
+}
+
+.SideBar *
+{
+    background: buttonface;
+    padding:5px;
+    font-size: 14px;
+    border: 1px solid lightgrey;
+    margin:3px;
+    cursor:pointer;
+}

@@ -8,7 +8,6 @@ function mergeObjs() {
 }
 ;
 
-
 function mapTouch(ev)
 {
     return (ev.changedTouches || [ev])[0];
@@ -427,7 +426,7 @@ function formEncode(value, separator = "&")
     return lo.map(([x, prefix]) => (encodeURIComponent(prefix) + "=" + encodeURIComponent(x))).join(separator);
 }
 
-class Container extends Wdg
+export class Container extends Wdg
 {
     constructor(props, x)
     {
@@ -435,7 +434,7 @@ class Container extends Wdg
     }
 }
 
-class SingleContainer extends Container
+export class SingleContainer extends Container
 {
     constructor(props, x)
     {
@@ -444,6 +443,8 @@ class SingleContainer extends Container
 
     setCurrent(x)
     {
+        if (x && this.children().indexOf(x)<0)
+            this.append(x);
         for (var c of this.children())
             c.props.active = (c === x)
         this.doLayout();
@@ -713,6 +714,13 @@ export class App extends  Box
     static get()
     {
         return Wdg.get("body");
+    }
+    static create()
+    {
+        const self=this;
+        Wdg.main(function () {
+            new self().doLayout();
+        });
     }
 }
 
@@ -1156,4 +1164,44 @@ export class Carousel extends SingleContainer
         super.doLayout();
     }
 
+}
+
+
+export class SideBar extends Box
+{
+    constructor(props)
+    {
+        super({...props,ignore:true})
+        const self=this;
+        this.expand().css({width:0,right:null});
+        new Icon("chevron-left").appendTo(this).on("click",function(){self.toggle();});
+    }
+    toggle()
+    {
+        this.props.opened=!this.props.opened;
+        this.doLayout();
+    }
+    
+    doLayout()
+    {
+        if (this.props.opened && !this.el.offsetWidth)
+            this.animate().css({width:this.props.wexpanded||200});
+        if (!this.props.opened && this.el.offsetWidth)
+            this.animate().css({width:0});
+    }
+    
+}
+
+export class Icon extends Wdg
+{
+    constructor(props,icon)
+    {
+        super(props,"<i/>")
+        this.toggleClass(this.getIconClass(name||this.props.icon||props))
+    }
+    getIconClass(icon)
+    {
+        return "fas fa-"+icon;
+    }
+    
 }
