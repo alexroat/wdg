@@ -123,7 +123,7 @@ export class Wdg
     css(s)
     {
         for (var k in s)
-            this.el.style[k] = k.match(cssSize) && !isNaN(s[k]) ? s[k] + "px" : s[k];
+            this.el.style[k] = s[k]!=null && k.match(cssSize) && !isNaN(s[k]) ? s[k] + "px" : s[k];
         return this;
     }
     cssa(style, transition)
