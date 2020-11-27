@@ -122,7 +122,7 @@ export class Wdg
     css(s)
     {
         for (var k in s)
-            this.el.style[k] = s[k]!=null && k.match(cssSize) && !isNaN(s[k]) ? s[k] + "px" : s[k];
+            this.el.style[k] = s[k] != null && k.match(cssSize) && !isNaN(s[k]) ? s[k] + "px" : s[k];
         return this;
     }
     cssa(style, transition)
@@ -443,7 +443,7 @@ export class SingleContainer extends Container
 
     setCurrent(x)
     {
-        if (x && this.children().indexOf(x)<0)
+        if (x && this.children().indexOf(x) < 0)
             this.append(x);
         for (var c of this.children())
             c.props.active = (c === x)
@@ -619,13 +619,16 @@ export class ChildPicker extends Wdg
 
 class TabLabel extends Wdg
 {
-    constructor(props,c)
+    constructor(props, c)
     {
         super(props)
-        const self=this;
-        this.text(c.props.title || c.constructor.name).on("click", function(){self.parent().parent().setCurrent(c);}).toggleClass("active", c.props.active || false);
+        const self = this;
+        this.text(c.props.title || c.constructor.name).on("click", function () {
+            const container = self.parent().parent();
+            container.setCurrent(container.props.nocurrent && container.getCurrent() == c ? null : c)
+        }).toggleClass("active", c.props.active || false);
     }
-    
+
 }
 
 export class TabHeader extends ChildPicker
@@ -640,7 +643,7 @@ export class TabHeader extends ChildPicker
         this.css({position: "absolute", left: 0, right: 0});
         this.removeAll();
         for (var c of this.getItems())
-            new TabLabel({},c).appendTo(this);
+            new TabLabel({}, c).appendTo(this);
         return super.doLayout()
     }
 
@@ -719,11 +722,13 @@ export class App extends  Box
     {
         return Wdg.get("body");
     }
-    static create()
+    static create(fn)
     {
-        const self=this;
+        const self = this;
         Wdg.main(function () {
-            new self().doLayout();
+            var app = new self();
+            fn && fn.call(app);
+            app.doLayout();
         });
     }
 }
@@ -1175,37 +1180,39 @@ export class SideBar extends Box
 {
     constructor(props)
     {
-        super({...props,ignore:true})
-        const self=this;
-        this.expand().css({width:0,right:null});
-        new Icon("chevron-left").appendTo(this).on("click",function(){self.toggle();});
+        super({...props, ignore: true})
+        const self = this;
+        this.expand().css({width: 0, right: null});
+        new Icon("chevron-left").appendTo(this).on("click", function () {
+            self.toggle();
+        });
     }
     toggle()
     {
-        this.props.opened=!this.props.opened;
+        this.props.opened = !this.props.opened;
         this.doLayout();
     }
-    
+
     doLayout()
     {
         if (this.props.opened && !this.el.offsetWidth)
-            this.animate().css({width:this.props.wexpanded||200});
+            this.animate().css({width: this.props.wexpanded || 200});
         if (!this.props.opened && this.el.offsetWidth)
-            this.animate().css({width:0});
+            this.animate().css({width: 0});
     }
-    
+
 }
 
 export class Icon extends Wdg
 {
-    constructor(props,icon)
+    constructor(props, icon)
     {
-        super(props,"<i/>")
-        this.toggleClass(this.getIconClass(name||this.props.icon||props))
+        super(props, "<i/>")
+        this.toggleClass(this.getIconClass(name || this.props.icon || props))
     }
     getIconClass(icon)
     {
-        return "fas fa-"+icon;
+        return "fas fa-" + icon;
     }
-    
+
 }
