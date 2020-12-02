@@ -161,6 +161,9 @@ and open the template in the editor.
     top:0px;
     width:100%;
     height:100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 

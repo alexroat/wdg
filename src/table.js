@@ -39,6 +39,40 @@ export class Table extends Box
     }
 }
 
+class NumericInput extends Html.Input
+{
+    constructor(props)
+    {
+        super(props)
+        this.attr({type: "number"})
+    }
+}
+
+class DateInput extends Html.Input
+{
+    constructor(props)
+    {
+        super(props)
+        this.attr({type: "date"})
+    }
+    val(x)
+    {
+        if (x==undefined)
+            return this.el.value+"Z";
+        else
+            this.el.value=x.slice(0, -1)
+        return this;
+    }
+}
+
+class DateTimeInput extends DateInput
+{
+    constructor(props)
+    {
+        super(props)
+        this.attr({type: "datetime-local"})
+    }
+}
 
 export class DataTable extends Table
 {
@@ -103,32 +137,24 @@ export class DataTable extends Table
 
     static fmtCell(c, val, col, row, table)
     {
-        const x=val == null ? "" : val
         c.removeAll();
         if (table.props.edit)
         {
-            const itype = {}[col.type]
-            const i = new Html.Input().val(x).appendTo(c)
+            const cl=({
+                "DECIMAL":NumericInput,
+                "INTEGER":NumericInput,
+                "NUMERIC":NumericInput,
+                "DATE":DateInput,
+                "DATETIME":DateTimeInput,
+            })[col.type]||Html.Input;
+            const i=new cl().appendTo(c).val(val);
             i.on("change", () => {
                 row[col.name] = i.val();
                 row._.modified = 1;
-            })
-            switch (true)
-            {
-                case col.type == "DECIMAL":
-                case col.type == "INTEGER":
-                    case col.type == "NUMERIC":
-                    i.attr({"type": "number"});
-                    break;
-                case col.type == "DATETIME":
-                    i.attr({"type": "datetime-local"}).val(x.slice(0, -1))
-                    break;
-                case col.type == "DATE":
-                    i.attr({"type": "date"}).val(x.slice(0, -1))
-                    break;
-            }
+            });
+            
         } else
-            new Html.Div().text(x).appendTo(c)
+            new Html.Span().text(val).appendTo(c)
     }
     formatCell(c)
     {
