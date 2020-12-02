@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-import {Wdg, Box, App, TabbedView, Splitter, ColoredBox, Menu, Tree, Dialog, Table, Grid, Carousel, SideBar, SingleContainer,Icon} from './wdg';
+import {Wdg, Box, App, Container, TabbedView, Splitter, ColoredBox, Menu, Tree, Dialog, Table, Grid, Carousel, SideBar, SingleContainer,Icon} from './wdg';
 
 import "./demo.css"
 
@@ -34,7 +34,7 @@ function randomImg(w, h)
 }
 
 
-class PageMock extends Wdg
+class PageMock extends Container
 {
     constructor(props)
     {
@@ -110,7 +110,7 @@ export class Demo extends App
         super(props)
         const self = this;
         this.sidebar = new SideBar().appendTo(this);
-        this.header = new Icon("bars").appendTo(this, {w: 30}).on("click", function () {
+        this.header = new Icon({},"bars").appendTo(this, {w: 30}).on("click", function () {
             self.sidebar.toggle();
         });
         this.main = new TabbedView().appendTo(this, {p: 1});

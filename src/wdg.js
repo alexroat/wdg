@@ -84,6 +84,18 @@ export class Wdg
         Wdg.get(x).append(this, props, refresh);
         return this;
     }
+    prepend(x, props, refresh = false)
+    {
+        var x = Wdg.get(x, props);
+        if (x)
+            this.el.insertBefore(x.el, this.el.firstChild);
+        return refresh ? this.doLayout() : this;
+    }
+    prependTo(x, props, refresh = false)
+    {
+        Wdg.get(x).prepend(this, props, refresh);
+        return this;
+    }
     remove(refresh = false)
     {
         var p = this.parent();
@@ -96,9 +108,12 @@ export class Wdg
     {
         return document.body.contains(this.el);
     }
-    parent()
+    parent(klass)
     {
-        return this.el.parentNode && Wdg.get(this.el.parentNode);
+        var p=Wdg.get(this.el.parentNode);
+        while (klass && p &&  !(p instanceof klass))
+            p=Wdg.get(p.el.parentNode)
+        return p;
     }
     children(all = false)
     {
@@ -108,6 +123,10 @@ export class Wdg
         return c.filter(function (c) {
             return all || !c.props.ignore;
         });
+    }
+    index()
+    {
+        return this.parent().children().indexOf(this);
     }
     animate(cb, transition = "all 0.1s linear")
     {
@@ -233,7 +252,7 @@ export class Wdg
             w.doLayout();
         });
     }
-    wrap(x)
+    wrap(x = new Wdg())
     {
         return x.append(this);
     }
@@ -244,6 +263,10 @@ export class Wdg
     next()
     {
         return Wdg.get(this.el.nextElementSibling);
+    }
+    hasClass(cls)
+    {
+        return this.el.classList.contains(cls);
     }
     toggleClass(cls, force)
     {
@@ -257,10 +280,10 @@ export class Wdg
     {
         var p = {...p};
         p.method = p.method || "GET";
-        p.contentType |= (p.json ? 'application/json' : 'application/x-www-form-urlencoded');
+        p.contentType = p.contentType || (p.json ? 'application/json' : 'application/x-www-form-urlencoded');
         return new Promise(function (resolve, reject) {
             var xhr = new XMLHttpRequest();
-            xhr.open(p.method, p.url + p.param ? "?" + formEncode(p.param) : "");
+            xhr.open(p.method, p.url + (p.param ? "?" + formEncode(p.param) : ""));
             xhr.setRequestHeader('Content-Type', p.contentType);
             xhr.onload = function () {
                 var r = {data: xhr.responseText, xhr};
@@ -332,7 +355,7 @@ export class Wdg
     }
     idrag(fnRef = () => ( {}))
     {
-        this.css({"touch-action": "manipulation"});
+        const wnd = Wdg.get(window)
         const self = this;
         var ref;
         var ev0;
@@ -344,25 +367,28 @@ export class Wdg
         }
         function mdown(ev)
         {
+            ref = fnRef(ev);
+            if (ref === undefined)
+                return
+            self.toggleClass("idrag", true)
             ev.preventDefault();
             ev.stopPropagation();
             ev0 = ev;
-            ref = fnRef(ev);
-            Wdg.get(window).on("mousemove touchmove", mmove).on("mouseup touchend", mup);
+            wnd.on("mousemove touchmove", mmove).on("mouseup touchend", mup);
             self.trigger("idragstart idrag", delta(ev));
             return false;
         }
         function mup(ev)
         {
+            self.toggleClass("idrag", false)
             ev.preventDefault();
             ev.stopPropagation();
-            Wdg.get(window).off("mousemove touchmove", mmove).off("mouseup touchend", mup);
+            wnd.off("mousemove touchmove", mmove).off("mouseup touchend", mup);
             self.trigger("idragstop idrag", delta(ev));
             return false;
         }
         function mmove(ev)
         {
-            ev.preventDefault();
             ev.stopPropagation();
             self.trigger("idragmove idrag", delta(ev));
             return false;
@@ -407,6 +433,31 @@ export class Wdg
                 src.off("statechange", notify);
         }
         return self.setState(fnMap(src.state));
+    }
+    toggleDoubletapZoom(enable = true)
+    {
+        const self = this;
+        function tapzoom(ev)
+        {
+            ev.preventDefault();
+            ev.stopPropagation();
+            self.toggleFullscreen();
+            return false;
+        }
+        if (enable)
+            self.on("dblclick", tapzoom)
+    }
+    toggleFullscreen(enable)
+    {
+        const self = this;
+        self.animate(function () {
+            self.doLayout()
+        }, "all 0.4s linear").toggleClass("fullscreen", enable);
+        return this;
+    }
+    isFullscreen()
+    {
+        return this.hasClass("fullscreen");
     }
 }
 
@@ -920,7 +971,7 @@ export class Dialog extends SingleContainer
     }
 }
 
-function whichEdge(ev, el, extra = 0)
+export function whichEdge(ev, el, extra = 0)
 {
     var ev = mapTouch(ev);
     var el = el || ev.src;
@@ -958,64 +1009,121 @@ function whichEdge(ev, el, extra = 0)
 }
 }
 
-
-export class TableRow extends Wdg
-{
-    constructor(props)
-    {
-        super(props, document.createElement("tr"));
-    }
-}
-
-export class TableCell extends Wdg
-{
-    constructor(props)
-    {
-        var props = {...props};
-        super(props, document.createElement(props.header ? "th" : "td"));
-        const self = this;
-        const extraMargin = 3;
-        this.on("mousemove", function (ev) {
-            const edge = whichEdge(ev, self.el, extraMargin);
-            self.css({cursor: {"E": "ew-resize", "S": "ns-resize"}[edge] || "default"});
-        }).on("idrag", function (ev) {
-            const {offsetWidth, offsetHeight, edge, deltaX, deltaY} = ev.detail;
-            if (edge)
-            {
-                if (edge == "E")
-                    self.css({width: offsetWidth + deltaX});
-                if (edge == "S")
-                    self.css({height: offsetHeight + deltaY});
-            }
-        }).idrag(function (ev) {
-            const {offsetLeft, offsetWidth, offsetTop, offsetHeight} = self.el;
-            return {offsetWidth, offsetHeight, edge: whichEdge(ev, self.el, extraMargin)};
-        });
-
-    }
-}
-
-export class Table extends Wdg
-{
-    constructor(props)
-    {
-        super(props, "<table><thead/><tbody/></table>");
-        this.head = Wdg.get(this.el.tHead);
-        this.body = Wdg.get(this.el.tBodies[0]);
-        var tr = new TableRow().appendTo(this.head)
-        for (var j = 0; j < 10; j++)
-            new TableCell({header: 1}).appendTo(tr).text(j).css({position: "sticky",
-                top: 0});
-        for (var i = 0; i < 100; i++)
-        {
-            var tr = new TableRow().appendTo(this.body)
-            for (var j = 0; j < 10; j++)
-                new TableCell().appendTo(tr).text(i + "," + j);
-        }
-
-    }
-}
-
+//
+//export class TableCol extends Wdg
+//{
+//    constructor(props)
+//    {
+//        super(props, document.createElement("col"));
+//    }
+//    getTable()
+//    {
+//        return this.parent();
+//    }
+//}
+//
+//export class TableRow extends Wdg
+//{
+//    constructor(props)
+//    {
+//        super(props, document.createElement("tr"));
+//    }
+//    getTable()
+//    {
+//        return this.parent().parent();
+//    }
+//}
+//
+//export class TableCell extends Wdg
+//{
+//    constructor(props)
+//    {
+//        var props = {...props};
+//        super(props, document.createElement(props.header ? "th" : "td"));
+//        const self = this;
+//        const extraMargin = 3;
+//        this.on("mousemove", function (ev) {
+//            const edge = whichEdge(ev, self.el, extraMargin);
+//            self.css({cursor: {"E": "ew-resize", "S": "ns-resize"}[edge] || "default"});
+//        }).on("idrag", function (ev) {
+//            const {offsetWidth, offsetHeight, edge, deltaX, deltaY, tableWidth, tableHeight} = ev.detail;
+//            if (edge)
+//            {
+//                if (edge == "E")
+//                {
+//                    self.getColumn().css({"width": offsetWidth + deltaX});
+//                    self.getTable().css({"width": tableWidth + deltaX});
+//                }
+//                if (edge == "S")
+//                    self.getRow().css({"height": offsetHeight + deltaY});
+//            }
+//        })
+//                .idrag(function (ev) {
+//                    const table = self.getTable().el;
+//                    const {offsetLeft, offsetWidth, offsetTop, offsetHeight} = self.el;
+//                    const edge = whichEdge(ev, self.el, extraMargin);
+//                    if (edge == "E" || edge == "S")
+//                        return {offsetWidth, offsetHeight, edge, tableWidth: table.offsetWidth, tableHeight: table.offsetHeight};
+//                });
+//
+//    }
+//    getColumn()
+//    {
+//        return this.getTable().colgroup.children()[this.index()];
+//    }
+//    getRow()
+//    {
+//        return this.parent();
+//    }
+//    getTable()
+//    {
+//        return this.getRow().getTable();
+//    }
+//}
+//
+//export class Table extends Wdg
+//{
+//    constructor(props)
+//    {
+//        super(props, "<table/>");
+//        this.colgroup = Wdg.get(document.createElement("colgroup")).appendTo(this);
+//        this.head = Wdg.get(document.createElement("thead")).appendTo(this);
+//        this.body = Wdg.get(document.createElement("tbody")).appendTo(this);
+//        this.setData();
+//    }
+//    reset()
+//    {
+//        this.head.removeAll();
+//        this.body.removeAll();
+//        this.colgroup.removeAll();
+//    }
+//    setData(data = {cols: [{name:"a"}, {name:"b"}], rows:[{a:1, b:2}, {a:3, b:4}]})
+//    {
+//        this.reset();
+//        var tr = new TableRow().appendTo(this.head);
+//        for (var col of data.cols)
+//        {
+//            new TableCol().appendTo(this.colgroup);
+//            new TableCell({header: 1}).appendTo(tr).text(col.name)
+//        }
+//        for (var row of data.rows)
+//        {
+//            var tr = new TableRow().appendTo(this.body)
+//            for (var col of data.cols)
+//                new TableCell().appendTo(tr).text(row[col.name]);
+//        }
+//        return this.doLayout();
+//    }
+//}
+//
+//export class TableBox extends Box
+//{
+//    constructor(props)
+//    {
+//        super(props)
+//        this.table = new Table(props).appendTo(this);
+//    }
+//}
 
 export class Input extends Wdg
 {
@@ -1032,31 +1140,28 @@ export class Input extends Wdg
 
 
 
-export class Select extends Input
-{
-    constructor(props)
-    {
-        super(props, "<select/>")
-    }
-}
 
-export class TextArea extends Input
-{
-    constructor(props)
-    {
-        super(props, "<textarea/>")
-    }
-}
+export const Html = new Proxy({}, {
+    get: function (target, tag) {
+        var tag=tag.toLowerCase( )
+        if (target[tag])
+            return target[tag];
+        var HtmlComponent;
+        target[tag] = HtmlComponent = class extends Wdg {
+            constructor(props)
+            {
+                super(props, document.createElement(tag.toLowerCase( )))
+            }
+        };
+        Object.defineProperty(target[tag], 'name', {value: tag});
+        return HtmlComponent;
+    }});
 
-export class Button extends Input
-{
-    constructor(props)
-    {
-        super(props, "<button/>")
-    }
 
-}
+window.Html = Html;
 
+window.d = new Wdg;
+window.d1 = new Html.Div;
 
 export class Form extends Wdg
 {
@@ -1067,7 +1172,7 @@ export class Form extends Wdg
 
     build(def)
     {
-        var r = new Wdg("<fieldset/>")
+        var r = new Html.FieldSet;
         switch (def.type)
         {
             case "object":
@@ -1079,22 +1184,22 @@ export class Form extends Wdg
                     r.append(build(d));
                 break;
             case "text":
-                new Wdg("<input/>").appendTo(r)
+                new Html.Input.appendTo(r)
                 break;
             case "number":
-                new Wdg("<input/>").appendTo(r)
+                new Html.Input.appendTo(r)
                 break;
             case "check":
-                new Wdg("<input/>").appendTo(r)
+                new Html.Input.appendTo(r)
                 break;
             case "radio":
                 for (var d in def.items)
-                    new Wdg("<input/>").appendTo(r)
+                    new Html.Input.appendTo(r)
                 break;
             case "select":
-                var s = new Wdg("<input/>").appendTo(r)
+                var s = new Html.Input.appendTo(r)
                 for (var d in def.items)
-                    new Wdg("<item/>").appendTo(r)
+                    new Html.Item.appendTo(r)
 
         }
         return r;
@@ -1205,14 +1310,84 @@ export class SideBar extends Box
 
 export class Icon extends Wdg
 {
-    constructor(props, icon)
+    constructor(props)
     {
-        super(props, "<i/>")
-        this.toggleClass(this.getIconClass(name || this.props.icon || props))
+        super(typeof (props) === "string" ? {icon: props} : props, "<i/>");
+        this.setIcon(this.props.icon);
     }
     getIconClass(icon)
     {
         return "fas fa-" + icon;
     }
+    setIcon(icon)
+    {
+        this.toggleClass(this.getIconClass(this.props.icon), false)
+        this.props.icon = icon;
+        this.toggleClass(this.getIconClass(this.props.icon), true)
+        return this.doLayout();
+    }
 
+}
+
+
+export class ToolBar extends Wdg
+{
+    constructor(props)
+    {
+        super(props)
+    }
+}
+
+export class ToolBarButton extends Html.Button
+{
+    constructor(props)
+    {
+        super(props)
+        const self=this;
+        this.on("click",()=>self.props.action());
+        //this.doLayout();
+    }
+    setIcon(icon)
+    {
+        this.props.icon=icon;
+        return this.doLayout();
+    }
+    doLayout()
+    {
+        this.removeAll();
+        this.icon=new Icon(this.props.icon).appendTo(this);
+        return this;
+    }
+}
+
+
+export class FloatingAction extends Html.Div
+{
+    constructor(props)
+    {
+        super({ignore: true, props})
+        this.css({right: 50, bottom: 50});
+    }
+}
+
+export class FullScreenButton extends ToolBarButton
+{
+    constructor(props)
+    {
+        super({icon: "expand", ...props})
+        const self = this;
+        this.props.action= function () {
+            const target = self.props.target || self.parent();
+            if (target)
+                target.toggleFullscreen();
+            self.doLayout();
+        }
+    }
+    doLayout()
+    {
+        const target = this.props.target || this.parent();
+        if (target)
+            this.props.icon=target.isFullscreen() ? "compress" : "expand";
+        return super.doLayout();
+    }
 }
