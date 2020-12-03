@@ -166,6 +166,11 @@ and open the template in the editor.
     text-overflow: ellipsis;
 }
 
+.Table th>i:before
+{
+    font-size:8px;
+}
+
 
 /*.Table tr>*>* {
     overflow: hidden;

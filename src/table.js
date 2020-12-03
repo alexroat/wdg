@@ -20,7 +20,7 @@ export class Table extends Box
     setData(data)
     {
         this.data = data;
-        this.doLayout();
+        this.refresh();
     }
     refresh()
     {
@@ -31,11 +31,7 @@ export class Table extends Box
             for (var j in this.data[i])
                 var td = new Html.Td().appendTo(tr).text(i + "," + j)
         }
-    }
-    doLayout()
-    {
-        //this.refresh();
-        return super.doLayout();
+        this.doLayout();
     }
 }
 
@@ -79,28 +75,27 @@ class RowHeaderCell extends Html.Th
     constructor(props)
     {
         super(props)
-        const self=this;
-        
+        const self = this;
+
         this.on("idrag", function (ev) {
             const {offsetWidth, offsetHeight, edge, deltaX, deltaY} = ev.detail;
-            if (edge.indexOf("S")>=0)
+            if (edge.indexOf("S") >= 0)
             {
                 self.parent().css({"height": offsetHeight + deltaY});
             }
         }).idrag(function (ev) {
             const {offsetLeft, offsetWidth, offsetTop, offsetHeight} = self.el;
-            const edge = whichEdge(ev, self.el, 5)||"";
-            console.log(edge,offsetLeft, offsetWidth, offsetTop, offsetHeight)
-            if (edge.indexOf("S")>=0)
+            const edge = whichEdge(ev, self.el, 5) || "";
+            if (edge.indexOf("S") >= 0)
                 return {offsetWidth, offsetHeight, edge};
         });
     }
     doLayout()
     {
-        const {table,row} = this.props;
-        this.text(row[""].i||"#")
-        if (row[""].op=="MOD")
-            new Html.Span().text("*").appendTo(this)
+        const {table, row} = this.props;
+        this.text(row[""].i)
+        if (row[""].op)
+            new Icon({icon:{UPDATE:"asterisk",CREATE:"plus",DELETE:"times"}[row[""].op]}).appendTo(this)
         return super.doLayout();
     }
 }
@@ -115,15 +110,15 @@ class ColHeaderCell extends Html.Th
         const self = this;
         this.on("idrag", function (ev) {
             const {offsetWidth, offsetHeight, edge, deltaX, deltaY} = ev.detail;
-            if (edge.indexOf("E")>=0)
+            if (edge.indexOf("E") >= 0)
             {
                 var w = offsetWidth + deltaX
                 self.css({"max-width": w, "min-width": w});
             }
         }).idrag(function (ev) {
             const {offsetLeft, offsetWidth, offsetTop, offsetHeight} = self.el;
-            const edge = whichEdge(ev, self.el, 5)||"";
-            if (edge.indexOf("E")>=0)
+            const edge = whichEdge(ev, self.el, 5) || "";
+            if (edge.indexOf("E") >= 0)
                 return {offsetWidth, offsetHeight, edge};
         });
     }
@@ -140,15 +135,16 @@ class Cell extends Html.Td
     }
     doLayout()
     {
-        const fnf=this.props.col.fmtCell || Cell.fmtCell
+        const fnf = this.props.col.fmtCell || Cell.fmtCell
         fnf.call(this);
         return super.doLayout();
     }
     static fmtCell()
     {
-        const self=this;
+        const self = this;
         const {row, col, table} = this.props;
-        const val = row[col.name]
+        var val = row[col.name]
+        val = val == null ? "" : val;
         this.removeAll()
         if (table.props.edit)
         {
@@ -159,11 +155,14 @@ class Cell extends Html.Td
                 "DATE": DateInput,
                 "DATETIME": DateTimeInput,
             })[col.type] || Html.Input;
-            const i = new cl().appendTo(this).val(val||"");
+            const i = new cl().appendTo(this).val(val);
             i.on("change", () => {
                 row[col.name] = i.val();
-                row[""].op="MOD";
-                table.mods[row[""].k] = row;
+                if (!row[""].op != "CREATE")
+                {
+                    row[""].op = "UPDATE";
+                    table.mods[row[""].k] = row;
+                }
                 table.doLayout();
             });
 
@@ -182,7 +181,7 @@ export class DataTable extends Table
     constructor(props)
     {
         super({pageSize: 10, page: 0, count: 0, limit: 0, ...props});
-        
+
         const self = this;
         this.pk = [];
         this.sorts = [];
@@ -192,7 +191,10 @@ export class DataTable extends Table
         this.toolbar = new ToolBar().prependTo(this, {w: 30});
         this.pager = new Pager().appendTo(this.toolbar);
         this.btnLoad = new LockButton().appendTo(this.toolbar);
-        this.btnLoad = new ToolBarButton({icon: "sync", action: () => {self.mods={};self.load();}}).appendTo(this.toolbar)
+        this.btnLoad = new ToolBarButton({icon: "sync", action: () => {
+                //self.mods = {};
+                self.load();
+            }}).appendTo(this.toolbar)
         this.btnSave = new ToolBarButton({icon: "save", action: () => self.save()}).appendTo(this.toolbar)
         this.btnAddRow = new ToolBarButton({icon: "file", action: () => self.createRow()}).appendTo(this.toolbar)
         this.btnDeleteRow = new ToolBarButton({icon: "trash", action: () => self.deleteRow()}).appendTo(this.toolbar)
@@ -207,30 +209,35 @@ export class DataTable extends Table
     {
         this.rows = data.rows;
         this.cols = data.cols;
-        for (var i in this.rows)
-        {
-            const row=this.rows[i];
-            row[""]={k:this.getKeys(row),i};
-        }
+        var i = 0;
+        for (var row of this.rows)
+            row[""] = {k: this.getKeys(row), i: i++};
         this.refresh();
+    }
+    newRows()
+    {
+        return Object.values(this.mods).filter((r) => r[""].op == "CREATE");
     }
     refresh()
     {
         const self = this;
-        const table=this;
+        const table = this;
         this.clear();
         const trhead = new Row({table}).appendTo(this.head);
         new Html.Th().appendTo(trhead);
         for (var col of this.cols)
-            new ColHeaderCell({col,table}).appendTo(trhead);
-        for (var row of this.rows)
+            new ColHeaderCell({col, table}).appendTo(trhead);
+        const drows = this.rows.concat(this.newRows())
+        var i=0;
+        for (var row of drows)
         {
+            row[""].i=i++;
             if (this.mods[row[""].k])
-                row=this.mods[row[""].k];
-            var tr = new Row({row,table}).appendTo(this.body);
-            new RowHeaderCell({row,table}).appendTo(tr);
+                row = this.mods[row[""].k];
+            var tr = new Row({row, table}).appendTo(this.body);
+            new RowHeaderCell({row, table}).appendTo(tr);
             for (var col of this.cols)
-                new Cell({row, col,table}).appendTo(tr);
+                new Cell({row, col, table}).appendTo(tr);
         }
         this.doLayout();
     }
@@ -250,10 +257,10 @@ export class DataTable extends Table
         })
         return mode;
     }
-    getKeys(row,op)
+    getKeys(row, op)
     {
-        this.pk=["OrderID"]
-        return JSON.stringify({k:this.pk.map((k) => row[k])})
+        this.pk = ["OrderID"]
+        return JSON.stringify({k: this.pk.map((k) => row[k])})
     }
     async load()
     {
@@ -263,12 +270,15 @@ export class DataTable extends Table
     {
 
     }
-    async createRow()
+    async createRow(row = {})
     {
-        var i=0;
-        while (this.mods[["new",i++]]);
-        this.mods["new",i]={}
-        this.doLayout();
+        var i = 0;
+        while (this.mods["new" + (++i)])
+            ;
+        const k = "new" + i
+        row[""] = {k, op: "CREATE"}
+        this.mods[k] = row;
+        this.refresh();
     }
     async deleteRow()
     {
