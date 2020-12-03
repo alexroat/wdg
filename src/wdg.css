@@ -171,6 +171,9 @@ and open the template in the editor.
     font-size:8px;
 }
 
+.Table .Row.current  td>* {
+    background: lightblue;
+}
 
 /*.Table tr>*>* {
     overflow: hidden;
