@@ -158,7 +158,7 @@ class Cell extends Html.Td
             const i = new cl().appendTo(this).val(val);
             i.on("change", () => {
                 row[col.name] = i.val();
-                if (!row[""].op != "CREATE")
+                if (row[""].op != "CREATE")
                 {
                     row[""].op = "UPDATE";
                     table.mods[row[""].k] = row;
@@ -192,7 +192,7 @@ export class DataTable extends Table
         this.pager = new Pager().appendTo(this.toolbar);
         this.btnLoad = new LockButton().appendTo(this.toolbar);
         this.btnLoad = new ToolBarButton({icon: "sync", action: () => {
-                //self.mods = {};
+                self.mods = {};
                 self.load();
             }}).appendTo(this.toolbar)
         this.btnSave = new ToolBarButton({icon: "save", action: () => self.save()}).appendTo(this.toolbar)
@@ -209,9 +209,8 @@ export class DataTable extends Table
     {
         this.rows = data.rows;
         this.cols = data.cols;
-        var i = 0;
         for (var row of this.rows)
-            row[""] = {k: this.getKeys(row), i: i++};
+            row[""] = {k: this.getKeys(row)};
         this.refresh();
     }
     newRows()
