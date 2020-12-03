@@ -236,6 +236,11 @@ export class Wdg
 
         return this;
     }
+    empty()
+    {
+        this.el.innerHTML="";
+        return this;
+    }
     removeAll(refresh = false)
     {
         for (var c of this.children())

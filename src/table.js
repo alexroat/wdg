@@ -57,10 +57,10 @@ class DateInput extends Html.Input
     }
     val(x)
     {
-        if (x==undefined)
-            return this.el.value+"Z";
+        if (x == undefined)
+            return this.el.value + "Z";
         else
-            this.el.value=x.slice(0, -1)
+            this.el.value = x.slice(0, -1)
         return this;
     }
 }
@@ -74,15 +74,108 @@ class DateTimeInput extends DateInput
     }
 }
 
+class RowHeaderCell extends Html.Th
+{
+    constructor(props)
+    {
+        super(props)
+        const self=this;
+        this.text(this.props.row._.i)
+        this.on("idrag", function (ev) {
+            const {offsetWidth, offsetHeight, edge, deltaX, deltaY} = ev.detail;
+            if (edge.indexOf("S")>=0)
+            {
+                self.parent().css({"height": offsetHeight + deltaY});
+            }
+        }).idrag(function (ev) {
+            const {offsetLeft, offsetWidth, offsetTop, offsetHeight} = self.el;
+            const edge = whichEdge(ev, self.el, 5)||"";
+            console.log(edge,offsetLeft, offsetWidth, offsetTop, offsetHeight)
+            if (edge.indexOf("S")>=0)
+                return {offsetWidth, offsetHeight, edge};
+        });
+    }
+}
+
+class ColHeaderCell extends Html.Th
+{
+    constructor(props)
+    {
+        super(props)
+        new Html.Span().text(this.props.col.name).appendTo(this);
+        new Sorter().appendTo(this);
+        const self = this;
+        this.on("idrag", function (ev) {
+            const {offsetWidth, offsetHeight, edge, deltaX, deltaY} = ev.detail;
+            if (edge.indexOf("E")>=0)
+            {
+                var w = offsetWidth + deltaX
+                self.css({"max-width": w, "min-width": w});
+            }
+        }).idrag(function (ev) {
+            const {offsetLeft, offsetWidth, offsetTop, offsetHeight} = self.el;
+            const edge = whichEdge(ev, self.el, 5)||"";
+            if (edge.indexOf("E")>=0)
+                return {offsetWidth, offsetHeight, edge};
+        });
+    }
+}
+
+class Cell extends Html.Td
+{
+    constructor(props)
+    {
+        super(props)
+        const {row, col, table} = this.props;
+        Cell.fmtCell.call(this)
+        this.text("")
+    }
+    doLayout()
+    {
+        const fnf=this.props.col.fmtCell || Cell.fmtCell
+        fnf.call(this);
+        return super.doLayout();
+    }
+    static fmtCell()
+    {
+        const {row, col, table} = this.props;
+        const val = row[col.name]
+        this.removeAll()
+        if (table.props.edit)
+        {
+            const cl = ({
+                "DECIMAL": NumericInput,
+                "INTEGER": NumericInput,
+                "NUMERIC": NumericInput,
+                "DATE": DateInput,
+                "DATETIME": DateTimeInput,
+            })[col.type] || Html.Input;
+            const i = new cl().appendTo(this).val(val);
+            i.on("change", () => {
+                row[col.name] = i.val();
+                table.mods[table.getKeys()] = row;
+            });
+
+        } else
+            new Html.Span().text(val).appendTo(this)
+    }
+}
+
+class Row extends Html.Tr
+{
+
+}
+
 export class DataTable extends Table
 {
     constructor(props)
     {
         super(props);
         const self = this;
+        this.pk = [];
         this.sorts = [];
         this.filters = [];
-        this.mods = new Set();
+        this.mods = {};
         this.setData({cols: [{name: "a"}, {name: "b"}], rows: [{a: 1, b: 2}, {a: 3, b: 4}]});
         this.toolbar = new ToolBar().prependTo(this, {w: 30});
         this.btnLoad = new ToolBarButton({icon: "sync", action: () => self.load()}).appendTo(this.toolbar)
@@ -104,17 +197,18 @@ export class DataTable extends Table
     refresh()
     {
         const self = this;
+        const table=this;
         this.clear();
-        const trhead = new Html.Tr().appendTo(this.head);
-        self.formatColRowHead(new Html.Th().appendTo(trhead));
+        const trhead = new Row({table}).appendTo(this.head);
+        new Html.Th().appendTo(trhead);
         for (var col of this.cols)
-            self.formatColHead(new Html.Th({col}).appendTo(trhead));
+            new ColHeaderCell({col,table}).appendTo(trhead);
         for (var row of this.rows)
         {
-            var tr = new Html.Tr({row}).appendTo(this.body);
-            self.formatRowHead(new Html.Th({row}).appendTo(tr));
+            var tr = new Row({row,table}).appendTo(this.body);
+            new RowHeaderCell({row,table}).appendTo(tr);
             for (var col of this.cols)
-                (col.fmtCell || DataTable.fmtCell)(new Html.Td({row, col}).appendTo(tr), row[col.name], col, row, this);
+                new Cell({row, col,table}).appendTo(tr);
         }
         this.doLayout();
     }
@@ -134,25 +228,28 @@ export class DataTable extends Table
         })
         return mode;
     }
-
+    getKeys(row)
+    {
+        return this.pk.map((k) => row[k]);
+    }
     static fmtCell(c, val, col, row, table)
     {
         c.removeAll();
         if (table.props.edit)
         {
-            const cl=({
-                "DECIMAL":NumericInput,
-                "INTEGER":NumericInput,
-                "NUMERIC":NumericInput,
-                "DATE":DateInput,
-                "DATETIME":DateTimeInput,
-            })[col.type]||Html.Input;
-            const i=new cl().appendTo(c).val(val);
+            const cl = ({
+                "DECIMAL": NumericInput,
+                "INTEGER": NumericInput,
+                "NUMERIC": NumericInput,
+                "DATE": DateInput,
+                "DATETIME": DateTimeInput,
+            })[col.type] || Html.Input;
+            const i = new cl().appendTo(c).val(val);
             i.on("change", () => {
                 row[col.name] = i.val();
-                row._.modified = 1;
+                table.mods[table.getKeys()] = row;
             });
-            
+
         } else
             new Html.Span().text(val).appendTo(c)
     }
@@ -333,3 +430,6 @@ export class PagedDataTable extends DataTable
         return this.load()
     }
 }
+
+
+
