@@ -80,7 +80,7 @@ class RowHeaderCell extends Html.Th
     {
         super(props)
         const self=this;
-        this.text(this.props.row._.i)
+        
         this.on("idrag", function (ev) {
             const {offsetWidth, offsetHeight, edge, deltaX, deltaY} = ev.detail;
             if (edge.indexOf("S")>=0)
@@ -94,6 +94,14 @@ class RowHeaderCell extends Html.Th
             if (edge.indexOf("S")>=0)
                 return {offsetWidth, offsetHeight, edge};
         });
+    }
+    doLayout()
+    {
+        const {table,row} = this.props;
+        this.text(row[""].i||"#")
+        if (row[""].op=="MOD")
+            new Html.Span().text("*").appendTo(this)
+        return super.doLayout();
     }
 }
 
@@ -138,6 +146,7 @@ class Cell extends Html.Td
     }
     static fmtCell()
     {
+        const self=this;
         const {row, col, table} = this.props;
         const val = row[col.name]
         this.removeAll()
@@ -150,10 +159,12 @@ class Cell extends Html.Td
                 "DATE": DateInput,
                 "DATETIME": DateTimeInput,
             })[col.type] || Html.Input;
-            const i = new cl().appendTo(this).val(val);
+            const i = new cl().appendTo(this).val(val||"");
             i.on("change", () => {
                 row[col.name] = i.val();
-                table.mods[table.getKeys()] = row;
+                row[""].op="MOD";
+                table.mods[row[""].k] = row;
+                table.doLayout();
             });
 
         } else
@@ -170,7 +181,8 @@ export class DataTable extends Table
 {
     constructor(props)
     {
-        super(props);
+        super({pageSize: 10, page: 0, count: 0, limit: 0, ...props});
+        
         const self = this;
         this.pk = [];
         this.sorts = [];
@@ -178,8 +190,13 @@ export class DataTable extends Table
         this.mods = {};
         this.setData({cols: [{name: "a"}, {name: "b"}], rows: [{a: 1, b: 2}, {a: 3, b: 4}]});
         this.toolbar = new ToolBar().prependTo(this, {w: 30});
-        this.btnLoad = new ToolBarButton({icon: "sync", action: () => self.load()}).appendTo(this.toolbar)
+        this.pager = new Pager().appendTo(this.toolbar);
+        this.btnLoad = new LockButton().appendTo(this.toolbar);
+        this.btnLoad = new ToolBarButton({icon: "sync", action: () => {self.mods={};self.load();}}).appendTo(this.toolbar)
         this.btnSave = new ToolBarButton({icon: "save", action: () => self.save()}).appendTo(this.toolbar)
+        this.btnAddRow = new ToolBarButton({icon: "file", action: () => self.createRow()}).appendTo(this.toolbar)
+        this.btnDeleteRow = new ToolBarButton({icon: "trash", action: () => self.deleteRow()}).appendTo(this.toolbar)
+        this.btnDuplicateRow = new ToolBarButton({icon: "copy", action: () => self.duplicateRow()}).appendTo(this.toolbar)
     }
     clear()
     {
@@ -191,7 +208,10 @@ export class DataTable extends Table
         this.rows = data.rows;
         this.cols = data.cols;
         for (var i in this.rows)
-            this.rows[i]._ = {i};
+        {
+            const row=this.rows[i];
+            row[""]={k:this.getKeys(row),i};
+        }
         this.refresh();
     }
     refresh()
@@ -205,6 +225,8 @@ export class DataTable extends Table
             new ColHeaderCell({col,table}).appendTo(trhead);
         for (var row of this.rows)
         {
+            if (this.mods[row[""].k])
+                row=this.mods[row[""].k];
             var tr = new Row({row,table}).appendTo(this.body);
             new RowHeaderCell({row,table}).appendTo(tr);
             for (var col of this.cols)
@@ -228,58 +250,10 @@ export class DataTable extends Table
         })
         return mode;
     }
-    getKeys(row)
+    getKeys(row,op)
     {
-        return this.pk.map((k) => row[k]);
-    }
-    static fmtCell(c, val, col, row, table)
-    {
-        c.removeAll();
-        if (table.props.edit)
-        {
-            const cl = ({
-                "DECIMAL": NumericInput,
-                "INTEGER": NumericInput,
-                "NUMERIC": NumericInput,
-                "DATE": DateInput,
-                "DATETIME": DateTimeInput,
-            })[col.type] || Html.Input;
-            const i = new cl().appendTo(c).val(val);
-            i.on("change", () => {
-                row[col.name] = i.val();
-                table.mods[table.getKeys()] = row;
-            });
-
-        } else
-            new Html.Span().text(val).appendTo(c)
-    }
-    formatCell(c)
-    {
-        const fnDisplay = () => new Html.Input().val(val)
-        const fnEdit = () => new Html.Div().text(val)
-        const {row, col} = c.props;
-        const self = this;
-        const val = row[col.name]
-        c.removeAll();
-        c.append(this.props.edit ? fnDisplay() : fnEdit())
-    }
-    formatColHead(c)
-    {
-        c.removeAll();
-        this.setResizable(c)
-        const {col} = c.props;
-        c.text(col.name);
-        c.append(new Sorter());
-    }
-    formatRowHead(c)
-    {
-        this.setResizable(c)
-        const {row} = c.props;
-        c.text(row._.i);
-    }
-    formatColRowHead(c)
-    {
-        this.setResizable(c)
+        this.pk=["OrderID"]
+        return JSON.stringify({k:this.pk.map((k) => row[k])})
     }
     async load()
     {
@@ -288,6 +262,45 @@ export class DataTable extends Table
     async save()
     {
 
+    }
+    async createRow()
+    {
+        var i=0;
+        while (this.mods[["new",i++]]);
+        this.mods["new",i]={}
+        this.doLayout();
+    }
+    async deleteRow()
+    {
+
+    }
+    async duplicateRow()
+    {
+
+    }
+    pageCount()
+    {
+        return Math.ceil(this.props.count / this.props.limit);
+    }
+    async goPrev()
+    {
+        this.props.page--;
+        return this.load()
+    }
+    async goNext()
+    {
+        this.props.page++;
+        return this.load()
+    }
+    async goBegin()
+    {
+        this.props.page = 0;
+        return this.load()
+    }
+    async goEnd()
+    {
+        this.props.page = this.pageCount() - 1;
+        return this.load()
     }
     setResizable(cell)
     {
@@ -393,41 +406,6 @@ class Pager extends Html.Span
         this.lblPage.val(target.props.page);
         this.lblPageCount.val(target.pageCount());
         return super.doLayout();
-    }
-}
-
-
-export class PagedDataTable extends DataTable
-{
-    constructor(props)
-    {
-        super({pageSize: 10, page: 0, count: 0, limit: 0, ...props});
-        this.pager = new Pager().appendTo(this.toolbar);
-        new LockButton().appendTo(this.toolbar);
-    }
-    pageCount()
-    {
-        return Math.ceil(this.props.count / this.props.limit);
-    }
-    async goPrev()
-    {
-        this.props.page--;
-        return this.load()
-    }
-    async goNext()
-    {
-        this.props.page++;
-        return this.load()
-    }
-    async goBegin()
-    {
-        this.props.page = 0;
-        return this.load()
-    }
-    async goEnd()
-    {
-        this.props.page = this.pageCount() - 1;
-        return this.load()
     }
 }
 
