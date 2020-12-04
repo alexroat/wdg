@@ -95,7 +95,7 @@ class RowHeaderCell extends Html.Th
         const {table, row} = this.props;
         this.text(row[""].i)
         if (row[""].op)
-            new Icon({icon: {UPDATE: "asterisk", CREATE: "plus", DELETE: "times"}[row[""].op]}).appendTo(this)
+            new Icon({icon: {UPDATE: "asterisk", INSERT: "plus", DELETE: "times"}[row[""].op]}).appendTo(this)
         return super.doLayout();
     }
 }
@@ -160,7 +160,7 @@ class Cell extends Html.Td
             i.on("change", (e) => {
                 e.stopPropagation()
                 row[col.name] = i.val();
-                if (row[""].op != "CREATE")
+                if (row[""].op != "INSERT")
                 {
                     row[""].op = "UPDATE";
                     table.mods[JSON.stringify(row[""].k)] = row;
@@ -219,7 +219,7 @@ export class DataTable extends Table
                 self.load();
             }}).appendTo(this.toolbar)
         this.btnSave = new ToolBarButton({icon: "save", action: () => self.save()}).appendTo(this.toolbar)
-        this.btnAddRow = new ToolBarButton({icon: "file", action: () => self.createRow()}).appendTo(this.toolbar)
+        this.btnAddRow = new ToolBarButton({icon: "file", action: () => self.insertRow()}).appendTo(this.toolbar)
         this.btnDeleteRow = new ToolBarButton({icon: "trash", action: () => self.deleteRow()}).appendTo(this.toolbar)
         this.btnDuplicateRow = new ToolBarButton({icon: "copy", action: () => self.duplicateRow()}).appendTo(this.toolbar)
     }
@@ -238,7 +238,7 @@ export class DataTable extends Table
     }
     newRows()
     {
-        return Object.values(this.mods).filter((r) => r[""].op == "CREATE");
+        return Object.values(this.mods).filter((r) => r[""].op == "INSERT");
     }
     refresh()
     {
@@ -298,7 +298,7 @@ export class DataTable extends Table
     getKeys(row, op)
     {
         this.pk = ["OrderID"]
-        return this.pk.map((k) => row[k])
+        return Object.fromEntries(this.pk.map((k) => [k,row[k]]))
     }
     async load()
     {
@@ -308,13 +308,13 @@ export class DataTable extends Table
     {
 
     }
-    async createRow(row = {})
+    async insertRow(row = {})
     {
         var i = 0;
         while (this.mods["new" + (++i)])
             ;
         const k = "new" + i
-        row[""] = {k, op: "CREATE"}
+        row[""] = {k, op: "INSERT"}
         this.mods[k] = row;
         this.refresh();
     }

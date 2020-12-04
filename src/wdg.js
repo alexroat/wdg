@@ -295,7 +295,7 @@ export class Wdg
                 if (xhr.status !== 200)
                     return reject(r);
                 if (p.json)
-                    r.data = JSON.parse(r.data);
+                    r.data = r.data==undefined||r.data==""?undefined:JSON.parse(r.data);
                 return resolve(r);
             };
             switch (p.method)
