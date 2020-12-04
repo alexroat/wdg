@@ -163,7 +163,7 @@ class Cell extends Html.Td
                 if (row[""].op != "CREATE")
                 {
                     row[""].op = "UPDATE";
-                    table.mods[row[""].k] = row;
+                    table.mods[JSON.stringify(row[""].k)] = row;
                 }
                 self.parent(Row).doLayout();
                 return false;
@@ -179,7 +179,8 @@ class Row extends Html.Tr
     constructor(props)
     {
         super(props)
-        const {table}=this.props,self=this;
+        const {table} = this.props,
+        self = this;
         this.on("click", function (e) {
             e.stopPropagation()
             table.setCurrentRow(self);
@@ -254,8 +255,9 @@ export class DataTable extends Table
         for (var row of drows)
         {
             row[""].i = i++;
-            if (this.mods[row[""].k])
-                row = this.mods[row[""].k];
+            const mrow = this.mods[JSON.stringify(row[""].k)]
+            if (mrow)
+                row = mrow;
             var tr = new Row({row, table}).appendTo(this.body);
             new RowHeaderCell({row, table}).appendTo(tr);
             for (var col of this.cols)
@@ -264,7 +266,7 @@ export class DataTable extends Table
         this.setCurrentRow();
         this.doLayout();
     }
-    setCurrentRow(tr=this.getCurrentRow())
+    setCurrentRow(tr = this.getCurrentRow())
     {
         this.current = tr.props.row[""].k;
         return this.doLayout();
@@ -296,7 +298,7 @@ export class DataTable extends Table
     getKeys(row, op)
     {
         this.pk = ["OrderID"]
-        return JSON.stringify({k: this.pk.map((k) => row[k])})
+        return this.pk.map((k) => row[k])
     }
     async load()
     {
@@ -318,12 +320,12 @@ export class DataTable extends Table
     }
     async deleteRow()
     {
-        const trc=this.getCurrentRow()
+        const trc = this.getCurrentRow()
         if (!trc)
             return;
-        const row=trc.props.row;
-        row[""].op="DELETE"
-        this.mods[row[""].k]=row;
+        const row = trc.props.row;
+        row[""].op = "DELETE"
+        this.mods[JSON.stringify(row[""].k)] = row;
         console.log(row);
         this.refresh();
     }
