@@ -228,12 +228,20 @@ export class DataTable extends Table
         this.body.removeAll();
         this.head.removeAll();
     }
-    setData(data)
+    setCols(cols)
     {
-        this.rows = data.rows;
-        this.cols = data.cols;
+        this.cols=cols;
+    }
+    setRows(rows)
+    {
+        this.rows = rows;
         for (var row of this.rows)
             row[""] = {k: this.getKeys(row)};
+    }
+    setData(data)
+    {
+        this.setCols(data.cols);
+        this.setRows(data.rows);
         this.refresh();
     }
     newRows()
@@ -295,10 +303,14 @@ export class DataTable extends Table
         })
         return mode;
     }
+    getPk()
+    {
+        return this.cols.filter((c)=>c.pk).map((c)=>c.name)
+    }
     getKeys(row, op)
     {
-        this.pk = ["OrderID"]
-        return Object.fromEntries(this.pk.map((k) => [k,row[k]]))
+        const pk = this.getPk()
+        return Object.fromEntries(pk.map((k) => [k,row[k]]))
     }
     async load()
     {
