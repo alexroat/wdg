@@ -308,7 +308,11 @@ export class DataTable extends Table
     {
 
     }
-    async insertRow(row = {})
+    emptyRowTemplate()
+    {
+        return Object.fromEntries(this.cols.map((c)=>[c.name,null]))
+    }
+    async insertRow(row = this.emptyRowTemplate())
     {
         var i = 0;
         while (this.mods["new" + (++i)])
