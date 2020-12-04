@@ -221,7 +221,7 @@ export class DataTable extends Table
         this.btnSave = new ToolBarButton({icon: "save", action: () => self.save()}).appendTo(this.toolbar)
         this.btnAddRow = new ToolBarButton({icon: "file", action: () => self.insertRow()}).appendTo(this.toolbar)
         this.btnDeleteRow = new ToolBarButton({icon: "trash", action: () => self.deleteRow()}).appendTo(this.toolbar)
-        this.btnDuplicateRow = new ToolBarButton({icon: "copy", action: () => self.duplicateRow()}).appendTo(this.toolbar)
+        this.btnDuplicateRow = new ToolBarButton({icon: "copy", action: () => self.copyRow()}).appendTo(this.toolbar)
     }
     clear()
     {
@@ -328,6 +328,11 @@ export class DataTable extends Table
     {
         return Object.fromEntries(this.cols.map((c)=>[c.name,null]))
     }
+    async copyRow()
+    {
+        const trc = this.getCurrentRow()
+        return this.insertRow({...trc.props.row});
+    }
     async insertRow(row = this.emptyRowTemplate())
     {
         var i = 0;
@@ -348,10 +353,6 @@ export class DataTable extends Table
         this.mods[JSON.stringify(row[""].k)] = row;
         console.log(row);
         this.refresh();
-    }
-    async duplicateRow()
-    {
-
     }
     pageCount()
     {
