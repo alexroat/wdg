@@ -308,6 +308,10 @@ export class DataTable extends Table
     {
 
     }
+    async loadSchema()
+    {
+        
+    }
     emptyRowTemplate()
     {
         return Object.fromEntries(this.cols.map((c)=>[c.name,null]))
