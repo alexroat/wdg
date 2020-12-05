@@ -175,6 +175,22 @@ and open the template in the editor.
     background: lightblue;
 }
 
+
+.Cell.nullvalue >*{
+    opacity: 0;
+}
+
+.Cell.nullvalue:after {
+    content: "NULL";
+    text-align: end;
+    color: #607D8B;
+}
+
+
+
+
+
+
 /*.Table tr>*>* {
     overflow: hidden;
      height: 100px; 

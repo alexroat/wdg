@@ -140,13 +140,29 @@ class Cell extends Html.Td
             fnf.call(this);
         return super.doLayout();
     }
+    getTr()
+    {
+        return this.parent(Row)
+    }
+    setValue(x)
+    {
+        const {row, col, table} = this.props;
+        row[col.name] = x;
+        this.getTr().addMod("UPDATE")
+        return this;
+    }
+    getValue()
+    {
+        const {row, col, table} = this.props;
+        return row[col.name]
+    }
     static fmtCell()
     {
         const self = this;
         const {row, col, table} = this.props;
         var val = row[col.name]
-        val = val == null ? "" : val;
         this.removeAll()
+        this.toggleClass("nullvalue", val == null)
         if (table.props.edit)
         {
             const cl = ({
@@ -159,15 +175,19 @@ class Cell extends Html.Td
             const i = new cl().appendTo(this).val(val);
             i.on("change", (e) => {
                 e.stopPropagation()
-                row[col.name] = i.val();
-                if (row[""].op != "INSERT")
-                {
-                    row[""].op = "UPDATE";
-                    table.mods[JSON.stringify(row[""].k)] = row;
-                }
-                self.parent(Row).doLayout();
+                self.setValue(i.val())
                 return false;
-            });
+            }).on("keydown", function (e) {
+                if ((e.which == 8 || e.which == 46) && e.shiftKey)
+                {
+                    row[col.name] = null;
+                    i.val(null)
+                    self.toggleClass("nullvalue", true)
+                    self.setValue(null)
+                }
+            }).on("mousedown touchstart", () => {
+                self.toggleClass("nullvalue", false)
+            })
 
         } else
             new Html.Span().text(val).appendTo(this)
@@ -195,6 +215,16 @@ class Row extends Html.Tr
     {
         this.toggleClass("current", this.isCurrent());
         return super.doLayout()
+    }
+    addMod(op)
+    {
+        const {table, row} = this.props;
+        const modkey=JSON.stringify(row[""].k);
+        if (op=="UPDATE" && table.mods[modkey] && table.mod[modkey]=="INSERT")
+            return;
+        row[""].op = op;
+        table.mods[modkey] = row;
+        this.doLayout();
     }
 }
 
@@ -230,7 +260,7 @@ export class DataTable extends Table
     }
     setCols(cols)
     {
-        this.cols=cols;
+        this.cols = cols;
     }
     setRows(rows)
     {
@@ -305,12 +335,12 @@ export class DataTable extends Table
     }
     getPk()
     {
-        return this.cols.filter((c)=>c.pk).map((c)=>c.name)
+        return this.cols.filter((c) => c.pk).map((c) => c.name)
     }
     getKeys(row, op)
     {
         const pk = this.getPk()
-        return Object.fromEntries(pk.map((k) => [k,row[k]]))
+        return Object.fromEntries(pk.map((k) => [k, row[k]]))
     }
     async load()
     {
@@ -322,11 +352,11 @@ export class DataTable extends Table
     }
     async loadSchema()
     {
-        
+
     }
     emptyRowTemplate()
     {
-        return Object.fromEntries(this.cols.map((c)=>[c.name,null]))
+        return Object.fromEntries(this.cols.map((c) => [c.name, null]))
     }
     async copyRow()
     {
