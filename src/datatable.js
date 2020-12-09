@@ -125,6 +125,9 @@ class Row extends Html.Tr
             self.doLayout();
             self.getTable().trigger("modrow", self);
         });
+        this.on("click", function () {
+            self.getTable().setCurrentRow(self);
+        })
     }
     mergeChanges()
     {
@@ -234,13 +237,16 @@ export class DataTable extends Table
         this.btnDeleteRow = new ToolBarButton({icon: "trash", action: () => self.deleteRow()}).appendTo(this.toolbar)
         this.btnDuplicateRow = new ToolBarButton({icon: "copy", action: () => self.copyRow()}).appendTo(this.toolbar)
         this.modsresume = new Html.Div().appendTo(this, {w: 100})
+        this.modsresume.doLayout = function () {
+            this.text(JSON.stringify(self.props.mods));
+            return this;
+        }
 
         this.on("modrow", function (e) {
 
             const tr = e.detail;
             const ks = JSON.stringify(tr.props.k)
             self.props.mods[ks] = {op: tr.props.op, row: tr.props.row};
-            self.modsresume.text(JSON.stringify(self.props.mods))
         })
     }
     doLayout()
@@ -248,14 +254,14 @@ export class DataTable extends Table
         const {rows, cols, mods, pk, page, pageSize, edit} = this.props;
         const self = this;
         this.clear()
-        new HeaderRow({cols, edit, mods}).appendTo(this.body);
+        new HeaderRow({cols, edit, mods}).appendTo(this.head);
         var i = page * pageSize;
         for (var row of rows)
             new Row({row, cols, k: this.getKey(row), edit, i: i++, mods}).appendTo(this.body);
-        for (var {k,row,op} of Object.values(mods))
-            if (op=="INSERT")
+        for (var {k, row, op} of Object.values(mods))
+            if (op == "INSERT")
                 new Row({row, cols, k, edit, i: i++, mods}).appendTo(this.body);
-        //this.getCurrentRow()
+        this.setCurrentRow();
         return super.doLayout();
     }
     async load()
@@ -330,42 +336,40 @@ export class DataTable extends Table
     }
     async copyRow()
     {
-//        const trc = this.getCurrentRow()
-//        return this.insertRow({...trc.props.row});
+        const trc = this.getCurrentRow()
+        if (trc)
+            this.insertRow({...trc.props.row});
     }
-    async insertRow(row ={})
+    async insertRow(row = {})
     {
-        var i=0;
+        var i = 0;
         var k;
-        while ((k=`new${++i}`) in this.props.mods);
-        this.props.mods[k]={"op":"INSERT","row":{},k};
+        while (JSON.stringify(k = ["new", i]) in this.props.mods)
+            i++;
+        this.props.mods[JSON.stringify(k)] = {"op": "INSERT", row, k};
         this.doLayout()
     }
     async deleteRow()
     {
-//        const trc = this.getCurrentRow()
-//        if (!trc)
-//            return;
-//        this.addMod(trc.props.row, "DELETE")
-//        this.refresh();
+        const trc = this.getCurrentRow()
+        if (trc)
+        {
+            var {row, k} = trc.props;
+            this.props.mods[JSON.stringify(k)] = {"op": "DELETE", row, k};
+        }
+        this.doLayout();
     }
-//    setCurrentRow(trc = this.getCurrentRow())
-//    {
-//        const cc = this.body.children()
-//        for (var tr of cc)
-//            tr.props.current = tr == tr.trc;
-//        return this.doLayout();
-//    }
-//    getCurrentRow()
-//    {
-//        const cc = this.body.children()
-//        for (var tr of cc)
-//            if (tr.props.current)
-//                return tr;
-//        if (cc.length)
-//            return this.setCurrentRow(cc[0]);
-//        return null;
-//    }
+    setCurrentRow(trc)
+    {
+        if (!trc)
+            trc = this.body.children()[0]
+        this.body.find("tr").forEach((w) => w.toggleClass("current", w === trc))
+        return this.getCurrentRow();
+    }
+    getCurrentRow()
+    {
+        return this.body.find("tr.current")[0];
+    }
 }
 
 class Pager extends Html.Span

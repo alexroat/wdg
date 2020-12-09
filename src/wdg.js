@@ -72,6 +72,16 @@ export class Wdg
     {
         document.addEventListener('DOMContentLoaded', fn);
     }
+    constains(x)
+    {
+        return this.el.contains(Wdg.get(x).el);
+    }
+    find(q)
+    {
+        if (q.prototype instanceof Wdg)
+            return [...this.el.querySelectorAll("*")].map((e)=>Wdg.get(e)).filter((w)=>w instanceof q)
+        return [...this.el.querySelectorAll(q)].map((e)=>Wdg.get(e))
+    }
     append(x, props, refresh = false)
     {
         var x = Wdg.get(x, props);
