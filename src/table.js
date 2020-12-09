@@ -69,7 +69,7 @@ class DateTimeInput extends DateInput
         this.attr({type: "datetime-local"})
     }
 }
-
+/*
 class RowHeaderCell extends Html.Th
 {
     constructor(props)
@@ -92,10 +92,11 @@ class RowHeaderCell extends Html.Th
     }
     doLayout()
     {
-        const {table, row} = this.props;
-        this.text(row[""].i)
-        if (row[""].op)
-            new Icon({icon: {UPDATE: "asterisk", INSERT: "plus", DELETE: "times"}[row[""].op]}).appendTo(this)
+        const {table, row,i} = this.props;
+        this.text(i)
+        const mod=table.mods[table.getKeys(row)]
+        if (mod)
+            new Icon({icon: {UPDATE: "asterisk", INSERT: "plus", DELETE: "times"}[mod.op]}).appendTo(this)
         return super.doLayout();
     }
 }
@@ -138,31 +139,33 @@ class Cell extends Html.Td
         const fnf = this.props.col.fmtCell || Cell.fmtCell
         if (!this.el.contains(document.activeElement))
             fnf.call(this);
+        this.toggleClass("nullvalue", this.getValue() == null)
         return super.doLayout();
     }
-    getTr()
+    addMod(op)
     {
-        return this.parent(Row)
+        const {table, row} = this.props;
+        return table.addMod(row, op)
     }
     setValue(x)
     {
         const {row, col, table} = this.props;
         row[col.name] = x;
-        this.getTr().addMod("UPDATE")
+        this.addMod("UPDATE")
         return this;
     }
     getValue()
     {
         const {row, col, table} = this.props;
-        return row[col.name]
+        const val = row[col.name]
+        return val == null ? null : val;
     }
     static fmtCell()
     {
         const self = this;
         const {row, col, table} = this.props;
-        var val = row[col.name]
+        var val = this.getValue()
         this.removeAll()
-        this.toggleClass("nullvalue", val == null)
         if (table.props.edit)
         {
             const cl = ({
@@ -180,10 +183,8 @@ class Cell extends Html.Td
             }).on("keydown", function (e) {
                 if ((e.which == 8 || e.which == 46) && e.shiftKey)
                 {
-                    row[col.name] = null;
-                    i.val(null)
-                    self.toggleClass("nullvalue", true)
                     self.setValue(null)
+                    self.doLayout();
                 }
             }).on("mousedown touchstart", () => {
                 self.toggleClass("nullvalue", false)
@@ -207,9 +208,15 @@ class Row extends Html.Tr
             return false;
         })
     }
+    getKeys()
+    {
+        const {table, row} = this.props;
+        return table.getKeys(row)
+    }
     isCurrent()
     {
-        return this.props.table.current == this.props.row[""].k;
+        const {table, row} = this.props;
+        return table.current == JSON.stringify(this.getKeys());
     }
     doLayout()
     {
@@ -219,12 +226,7 @@ class Row extends Html.Tr
     addMod(op)
     {
         const {table, row} = this.props;
-        const modkey=JSON.stringify(row[""].k);
-        if (op=="UPDATE" && table.mods[modkey] && table.mod[modkey]=="INSERT")
-            return;
-        row[""].op = op;
-        table.mods[modkey] = row;
-        this.doLayout();
+        return table.addMod(row, op)
     }
 }
 
@@ -265,8 +267,6 @@ export class DataTable extends Table
     setRows(rows)
     {
         this.rows = rows;
-        for (var row of this.rows)
-            row[""] = {k: this.getKeys(row)};
     }
     setData(data)
     {
@@ -276,7 +276,7 @@ export class DataTable extends Table
     }
     newRows()
     {
-        return Object.values(this.mods).filter((r) => r[""].op == "INSERT");
+        return Object.values(this.mods).filter((m) => m.op == "INSERT").map((m) => m.row);
     }
     refresh()
     {
@@ -292,21 +292,21 @@ export class DataTable extends Table
         var i = page * pageSize;
         for (var row of drows)
         {
-            row[""].i = i++;
-            const mrow = this.mods[JSON.stringify(row[""].k)]
+            const mrow = this.mods[JSON.stringify(this.getKeys(row))]
             if (mrow)
                 row = mrow;
-            var tr = new Row({row, table}).appendTo(this.body);
-            new RowHeaderCell({row, table}).appendTo(tr);
+            var tr = new Row({row, table, i}).appendTo(this.body);
+            new RowHeaderCell({row, table,i}).appendTo(tr);
             for (var col of this.cols)
                 new Cell({row, col, table}).appendTo(tr);
+            i++
         }
         this.setCurrentRow();
         this.doLayout();
     }
     setCurrentRow(tr = this.getCurrentRow())
     {
-        this.current = tr.props.row[""].k;
+        this.current = JSON.stringify(tr.getKeys());
         return this.doLayout();
     }
     getCurrentRow()
@@ -365,12 +365,7 @@ export class DataTable extends Table
     }
     async insertRow(row = this.emptyRowTemplate())
     {
-        var i = 0;
-        while (this.mods["new" + (++i)])
-            ;
-        const k = "new" + i
-        row[""] = {k, op: "INSERT"}
-        this.mods[k] = row;
+        this.addMod(row, "INSERT")
         this.refresh();
     }
     async deleteRow()
@@ -378,10 +373,7 @@ export class DataTable extends Table
         const trc = this.getCurrentRow()
         if (!trc)
             return;
-        const row = trc.props.row;
-        row[""].op = "DELETE"
-        this.mods[JSON.stringify(row[""].k)] = row;
-        console.log(row);
+        this.addMod(trc.props.row, "DELETE")
         this.refresh();
     }
     pageCount()
@@ -407,6 +399,12 @@ export class DataTable extends Table
     {
         this.props.page = this.pageCount() - 1;
         return this.load()
+    }
+    addMod(row, op)
+    {
+        const k = this.getKeys(row)
+        const sk = JSON.stringify(k);
+        this.mods[sk] = {op, k, row};
     }
     setResizable(cell)
     {
@@ -514,6 +512,6 @@ class Pager extends Html.Span
         return super.doLayout();
     }
 }
-
+*/
 
 

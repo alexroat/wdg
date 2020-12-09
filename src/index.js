@@ -8,3 +8,4 @@
 export * from './wdg'
 export * from "./demo"
 export * from "./table"
+export * from "./datatable"

@@ -20,7 +20,6 @@ export class Wdg
     {
         this.el = Wdg.getEl(x || "<div/>");
         this.el.__WDG = this;
-        this.props = {};
         this.setProps(props);
         this.toggleClass(this.defaultClasses().join(" "), true);
     }
@@ -37,7 +36,8 @@ export class Wdg
     }
     setProps(props)
     {
-        this.props = {...this.props, ...props};
+        this.props = {...this.props,...props}
+        this.trigger("propschange",this.props)
         return this;
     }
     doLayout()
@@ -159,14 +159,14 @@ export class Wdg
     }
     text(t)
     {
-        if (t === undefined)
+        if (!arguments.length)
             return this.el.textContent;
         this.el.textContent = t;
         return this;
     }
     val(x)
     {
-        if (x === undefined)
+        if (!arguments.length)
             return this.el.value;
         this.el.value = x;
         return this;
