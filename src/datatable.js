@@ -3,7 +3,7 @@ import {Table} from "./table";
 import {ToolBar} from "./toolbar";
 import {ToolBarButton} from "./buttons";
 import {Icon} from "./icons";
-import {whichEdge} from "./utils"
+import {whichEdge} from "./utils";
 
 class NumericInput extends Html.Input
 {
@@ -123,6 +123,7 @@ class Row extends Html.Tr
     {
         super(props)
         const {row, cols, edit, k} = this.props;
+
         const self = this;
 
 
@@ -141,7 +142,6 @@ class Row extends Html.Tr
     }
     doLayout()
     {
-        this.props = {...this.props, ...this.getTable().props}
         this.mergeChanges()
         const {row, cols, edit, mods, k, op, i} = this.props;
         this.removeAll()
@@ -177,8 +177,10 @@ class HeaderCell extends Cell
     }
     formatCell()
     {
+        const {col} = this.props;
         this.removeAll()
-        this.text(this.props.col.name)
+        this.text(col.name)
+        new Sorter({col}).appendTo(this);
     }
 }
 
@@ -187,7 +189,6 @@ class HeaderRow extends Row
 
     doLayout()
     {
-        this.props = {...this.props, ...this.getTable().props}
         this.mergeChanges()
         const {row, cols, edit, mods, k, op, i} = this.props;
         this.removeAll()
@@ -228,7 +229,7 @@ export class DataTable extends Table
 {
     constructor(props)
     {
-        super({rows: [], cols: [], mods: {}, pk: [], sorts: [], filters: [], count: 0, page: 0, pageSize: 10, ...props})
+        super({rows: [], cols: [], mods: {}, pk: [], count: 0, page: 0, pageSize: 10, ...props, })
         const self = this;
         this.toolbar = new ToolBar().prependTo(this, {w: "auto"});
         this.pager = new Pager().appendTo(this.toolbar);
@@ -256,7 +257,8 @@ export class DataTable extends Table
     }
     doLayout()
     {
-        const {rows, cols, mods, pk, page, pageSize, edit} = this.props;
+        const {rows, mods, pk, page, pageSize, edit} = this.props;
+        const cols = this.getCols()
         const self = this;
         this.clear()
         new HeaderRow({cols, edit, mods}).appendTo(this.head);
@@ -301,7 +303,11 @@ export class DataTable extends Table
     }
     setCols(cols)
     {
-        this.props.cols = [{cellClass: RowHeaderCell, name: "", sticky: 1}, ...cols, {name: "raw", formatCell: function () {
+        this.props.cols = cols;
+    }
+    getCols()
+    {
+        return [{cellClass: RowHeaderCell, virtual: true, name: "", sticky: 1}, ...this.props.cols, {name: "raw", virtual: true, formatCell: function () {
                     new Html.Div().text(JSON.stringify(this.getRow().props)).appendTo(this.removeAll());
                 }}];
     }
@@ -440,16 +446,37 @@ class Sorter extends Html.Span
     }
     doLayout()
     {
-        const table = this.parent(DataTable);
-        const col = this.parent(Html.th).props.col;
+        const {col} = this.props;
         this.removeAll();
-        this.icon = new Icon({icon: ({asc: "sort-up", desc: "sort-down"}[table.getSort(col.name)]) || "sort"}).appendTo(this);
+        var icon;
+        switch (true)
+        {
+            case col.sort < 0:
+                icon = "sort-down"
+                break;
+            case col.sort > 0:
+                icon = "sort-up"
+                break;
+            default:
+                icon = "sort"
+        }
+        this.icon = new Icon({icon}).appendTo(this);
     }
     toggleSort()
     {
-        const col = this.parent(Html.th).props.col;
-        const table = this.parent(DataTable);
-        table.setSort(col.name, {asc: "desc", desc: "", "": "asc"}[table.getSort(col.name) || ""], false);
+        const {col} = this.props;
+        const table = this.parent(DataTable)
+        switch (true)
+        {
+            case col.sort < 0:
+                col.sort=0
+                break;
+            case col.sort > 0:
+                col.sort=-1
+                break;
+            default:
+                col.sort=1
+        }
         table.load();
     }
 }
