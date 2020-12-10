@@ -4,83 +4,65 @@
  * and open the template in the editor.
  */
 
-import {Wdg, Box, App, Container, TabbedView, Splitter, ColoredBox, Menu, Tree, Dialog, Table, Grid, Carousel, SideBar, SingleContainer,Icon} from './index';
+import {Wdg, Box, App, Container, TabbedView, Splitter, ColoredBox, Menu, Tree, Dialog, Table, Grid, Carousel, SideBar, SingleContainer, Icon, PageMock,randomText} from './index';
 
 
 
 
 
-import "./demo.css"
+import "./demo.css";
 
-        function randomInt(min, max)
-        {
-            if (max == undefined)
-                max = min, min = 0;
-            return min + parseInt(Math.random() * (max - min));
-        }
 
-function randomText(n = 50, min = 1, max = 10, set = "abcdefghijklmnopqrstuvwxyz")
+
+
+export class DemoMenu extends ColoredBox
 {
-    var r = "";
-    for (var i = 0; i < n; i++)
+    constructor(props)
     {
-        var nw = randomInt(min, max);
-        for (var j = 0; j < nw; j++)
-            r += set[randomInt(set.length)]
-        r += " ";
+        super(props);
+        this.setMenu({items: [{title: "ciao"}, {title: "miao", action: [{title: "pippo"}, {title: "pluto"}, {title: "paperino"}]}, {title: "bau", action: [{title: "ying"}, {title: "yang"}]}]});
     }
-    return r;
 }
 
-function randomImg(w, h)
+export class DemoModal extends ColoredBox
 {
-    return "https://picsum.photos/" + w + "/" + h + "/?k=" + Math.random();
+    constructor(props)
+    {
+        super(props)
+
+
+        this.on("click", async function () {
+
+            var t = window.hhh = new Dialog();
+            console.log(await t.showModal())
+        })
+
+    }
 }
 
+export class DemoTable extends Table
+{
+    constructor(props)
+    {
+        super(props)
+        this.setData([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+    }
+}
 
-class PageMock extends Container
+export class DemoGrid extends Grid
 {
     constructor(props)
     {
         super(props);
 
-        var nSections = randomInt(3, 10);
-        for (var s = 0; s < nSections; s++)
-        {
-            new Wdg({}, "<h2/>").text(randomText(4, 12)).appendTo(this);
-            new MyStupidToggle().appendTo(this);
-            var nsi = randomInt(2, 5);
-            for (var n = 0; n < nsi; n++)
-            {
-                var nPars = randomInt(1, 4);
-                for (var p = 0; p < nPars; p++)
-                    new Wdg({}, "<p/>").text(randomText()).appendTo(this).css({padding: 5});
-                new Wdg({}, "<img/>").attr({src: randomImg(300, 200)}).appendTo(this);
-            }
-
-        }
+        for (var i = 0; i < 5; i++)
+            for (var j = 0; j < 5; j++)
+                new ColoredBox({x: j, y: i}).appendTo(this);
     }
 }
 
-class MyStupidToggle extends Wdg
-{
-    constructor(props)
-    {
-        super(props, "<span/>")
-        const self = this;
-        this.css({padding: 10, border: "1px solid grey", cursor: "pointer"})
-        this.on("click", function () {
-            self.props.switch = !self.props.switch;
-            self.doLayout()
-        });
-    }
-    doLayout()
-    {
-        this.css({background: this.props.switch ? "green" : "yellow"}).text(this.props.switch ? "ON" : "OFF")
-    }
-}
 
-class DemoCarousel extends Carousel
+export class DemoCarousel extends Carousel
 {
     constructor(props)
     {
@@ -91,18 +73,18 @@ class DemoCarousel extends Carousel
     }
 }
 
-class DemoSplitter extends Box
+export class DemoSplitter extends Box
 {
     constructor(props)
     {
         super(props)
 
-        var top = new PageMock().appendTo(this,{w:50});
+        var top = new PageMock().appendTo(this, {w: 50});
         new Splitter().appendTo(this);
-        var bottom = new Box({horizontal: true}).appendTo(this,{p:1});
-        new PageMock().appendTo(bottom,{w:50});
+        var bottom = new Box({horizontal: true}).appendTo(this, {p: 1});
+        new PageMock().appendTo(bottom, {w: 50});
         new Splitter().appendTo(bottom);
-        new PageMock().appendTo(bottom,{p:1});
+        new PageMock().appendTo(bottom, {p: 1});
     }
 
 }
@@ -114,7 +96,7 @@ export class Demo extends App
         super(props)
         const self = this;
         this.sidebar = new SideBar().appendTo(this);
-        this.header = new Icon({icons:"bars"}).appendTo(this, {w: 30}).on("click", function () {
+        this.header = new Icon({icons: "bars"}).appendTo(this, {w: 30}).on("click", function () {
             self.sidebar.toggle();
         });
         this.main = new TabbedView().appendTo(this, {p: 1});
@@ -127,6 +109,10 @@ export class Demo extends App
         this.addContentAction(PageMock)
         this.addContentAction(DemoCarousel)
         this.addContentAction(DemoSplitter)
+        this.addContentAction(DemoMenu)
+        this.addContentAction(DemoModal)
+        this.addContentAction(DemoTable)
+        this.addContentAction(DemoGrid)
     }
     addContentAction(klass)
     {

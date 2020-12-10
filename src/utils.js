@@ -43,6 +43,31 @@ export function randomColor() {
 }
 
 
+export function randomInt(min, max)
+{
+    if (max == undefined)
+        max = min, min = 0;
+    return min + parseInt(Math.random() * (max - min));
+}
+
+export function randomText(n = 50, min = 1, max = 10, set = "abcdefghijklmnopqrstuvwxyz")
+{
+    var r = "";
+    for (var i = 0; i < n; i++)
+    {
+        var nw = randomInt(min, max);
+        for (var j = 0; j < nw; j++)
+            r += set[randomInt(set.length)]
+        r += " ";
+    }
+    return r;
+}
+
+export function randomImg(w, h)
+{
+    return "https://picsum.photos/" + w + "/" + h + "/?k=" + Math.random();
+}
+
 
 
 
