@@ -1,5 +1,6 @@
-import {whichEdge, Wdg, Box, TableBox, Splitter, Icon, TabbedView, ToolBar, ToolBarButton, Html, FloatingAction, FullScreenButton} from "./wdg"
-
+import { Wdg, Html} from "./wdg"
+import { Box } from "./box"
+import {whichEdge} from "./utils"
 
 export class Table extends Box
 {

@@ -1,5 +1,10 @@
-import {whichEdge, Wdg, Box, TableBox, Splitter, Icon, TabbedView, ToolBar, ToolBarButton, Html, FloatingAction, FullScreenButton} from "./wdg"
+import {Wdg, Html} from "./wdg"
 import {Table} from "./table";
+import {ToolBar} from "./toolbar";
+import {ToolBarButton} from "./buttons";
+import {Icon} from "./icons";
+import {whichEdge} from "./utils"
+
 class NumericInput extends Html.Input
 {
     constructor(props)
@@ -40,7 +45,7 @@ class Cell extends Wdg
 {
     constructor(props)
     {
-        super(props, document.createElement(props.col.header ? "th" : "td"))
+        super(props, document.createElement(props.header || props.col.header ? "th" : "td"))
     }
     doLayout()
     {
@@ -196,7 +201,7 @@ class RowHeaderCell extends Cell
 {
     constructor(props)
     {
-        super(props)
+        super({header: true, ...props})
         const self = this;
         this.on("idrag", function (ev) {
             const {offsetWidth, offsetHeight, edge, deltaX, deltaY} = ev.detail;
@@ -225,7 +230,7 @@ export class DataTable extends Table
     {
         super({rows: [], cols: [], mods: {}, pk: [], sorts: [], filters: [], count: 0, page: 0, pageSize: 10, ...props})
         const self = this;
-        this.toolbar = new ToolBar().prependTo(this, {w: 30});
+        this.toolbar = new ToolBar().prependTo(this, {w: "auto"});
         this.pager = new Pager().appendTo(this.toolbar);
         this.btnLoad = new LockButton().appendTo(this.toolbar);
         this.btnLoad = new ToolBarButton({icon: "sync", action: () => {
@@ -236,7 +241,7 @@ export class DataTable extends Table
         this.btnAddRow = new ToolBarButton({icon: "file", action: () => self.insertRow()}).appendTo(this.toolbar)
         this.btnDeleteRow = new ToolBarButton({icon: "trash", action: () => self.deleteRow()}).appendTo(this.toolbar)
         this.btnDuplicateRow = new ToolBarButton({icon: "copy", action: () => self.copyRow()}).appendTo(this.toolbar)
-        this.modsresume = new Html.Div().appendTo(this, {w: 100})
+        this.modsresume = new Html.Div().appendTo(this, {w: 100}).css({overflow: "auto"})
         this.modsresume.doLayout = function () {
             this.text(JSON.stringify(self.props.mods));
             return this;

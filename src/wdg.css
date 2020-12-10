@@ -66,6 +66,16 @@ and open the template in the editor.
     z-index:10000;
 }
 
+.SideBar *
+{
+    background: buttonface;
+    padding:5px;
+    font-size: 14px;
+    border: 1px solid lightgrey;
+    margin:3px;
+    cursor:pointer;
+}
+
 .Icon
 {
     cursor:pointer;
@@ -134,7 +144,7 @@ and open the template in the editor.
     background: lightgray;
     position: sticky;
 }
-
+/*
 .Table thead  th
 {
     top: -1px;
@@ -153,6 +163,7 @@ and open the template in the editor.
     left: -1px;
     z-index:2;
 }
+*/
 
 .Table tbody td>*
 {
@@ -185,14 +196,3 @@ and open the template in the editor.
     text-align: end;
     color: #607D8B;
 }
-
-
-
-
-
-
-/*.Table tr>*>* {
-    overflow: hidden;
-     height: 100px; 
-    width: 100px;
-}*/
