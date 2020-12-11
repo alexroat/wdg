@@ -84,6 +84,8 @@ class Cell extends Wdg
 
 
         var val = this.getValue()
+        if (val==null)
+            this.toggleClass("nullvalue",true)
         this.removeAll()
         if (this.props.edit)
         {
@@ -252,7 +254,7 @@ export class DataTable extends Table
 
             const tr = e.detail;
             const ks = JSON.stringify(tr.props.k)
-            self.props.mods[ks] = {op: tr.props.op, row: tr.props.row};
+            self.props.mods[ks] = {op: tr.props.op, row: tr.props.row,k:tr.props.k};
         })
     }
     doLayout()
@@ -273,11 +275,16 @@ export class DataTable extends Table
     }
     async load()
     {
-        this.setCols([{name: "ciao"}, {name: "miao"}, {name: "bau"}, {name: "test", formatCell: function () {
+        this.setCols([{name: "id", pk:1}, {name: "miao"}, {name: "bau"}, {name: "test", formatCell: function () {
                     this.text(JSON.stringify(this.props.row));
                 }}]);
-        this.setRows([{ciao: 1, miao: 2, bau: 3}, {ciao: 1, miao: 2, bau: 3}, {ciao: 1, miao: 2, bau: 3}]);
+        this.setRows([{ciao: 1, miao: 2, bau: 3}, {ciao: 2, miao: 2, bau: 3}, {ciao: 3, miao: 2, bau: 3}]);
         this.props.pk = this.getPKCols();
+        this.doLayout();
+    }
+    async save()
+    {
+        this.props.mods={};
         this.doLayout();
     }
     getFormatCol()

@@ -1,5 +1,5 @@
-import {Wdg} from "./wdg"
-import {SingleContainer} from "./container"
+import {Wdg,SingleContainer,Icon} from "./all"
+
 
 
 export class ParentItemPicker
@@ -49,6 +49,8 @@ class TabLabel extends Wdg
                 self.doLayout();
             }).setCurrent(container.props.nocurrent && container.getCurrent() == c ? null : c)
         }).toggleClass("active", c.props.active || false);
+        
+        new Icon({icon:"times-circle"}).appendTo(this).on("click",()=>{c.remove();self.parent(SingleContainer).doLayout();});
     }
 
 }
