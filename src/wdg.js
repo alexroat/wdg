@@ -194,17 +194,17 @@ export class Wdg
         const self = this;
         (event.match(/\S+/g) || []).map(function (e) {
             if (opt.global)
-                Wdg.triggerGlobal(e, data);
+                Wdg.triggerGlobal(e, data,opt);
             else
-                self.el.dispatchEvent(new CustomEvent(e, {detail: data}));
+                self.el.dispatchEvent(new CustomEvent(e, {detail: data,...opt}));
         });
         return this;
     }
-    static triggerGlobal(event, data)
+    static triggerGlobal(event, data, opt = {})
     {
         (event.match(/\S+/g) || []).map(function (e) {
             [...document.querySelectorAll(`[wdge-${e}]`)].map(function (el) {
-                el.dispatchEvent(new CustomEvent(e, {detail: data}));
+                el.dispatchEvent(new CustomEvent(e, {detail: data,...opt}));
             });
         });
     }

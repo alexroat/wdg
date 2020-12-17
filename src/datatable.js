@@ -23,10 +23,9 @@ class DateInput extends Html.Input
     }
     val(x)
     {
-        if (x == undefined)
+        if (!arguments.length)
             return this.el.value + "Z";
-        else
-            this.el.value = x.slice(0, -1)
+        this.el.value = x ? x.slice(0, -1) : null;
         return this;
     }
 }
@@ -46,11 +45,15 @@ class Cell extends Wdg
     constructor(props)
     {
         super(props, document.createElement(props.header || props.col.header ? "th" : "td"))
+        this.refresh();
+    }
+    refresh()
+    {
+        const {row, col, edit, formatCell} = this.props;
+        this.formatCell();
     }
     doLayout()
     {
-        this.props = {...this.props, ...this.getRow().props}
-        this.formatCell();
         if (this.props.col.sticky)
             this.css({left: this.el.offsetLeft, position: "sticky", "z-index": 1})
         return super.doLayout()
@@ -72,8 +75,7 @@ class Cell extends Wdg
     {
         const {row, col} = this.props;
         row[col.name] = x;
-        this.getRow().props.op = "UPDATE";
-        this.getRow().trigger("modrow");
+        this.trigger("cellchange", {}, {bubbles: true});
     }
     formatCell()
     {
@@ -82,10 +84,6 @@ class Cell extends Wdg
         if (col.formatCell)
             return col.formatCell.call(this);
 
-
-        var val = this.getValue()
-        if (val==null)
-            this.toggleClass("nullvalue",true)
         this.removeAll()
         if (this.props.edit)
         {
@@ -96,13 +94,13 @@ class Cell extends Wdg
                 "DATE": DateInput,
                 "DATETIME": DateTimeInput,
             })[col.type] || Html.Input;
-            const i = new cl().appendTo(this).val(val);
+            const i = new cl(this.props).appendTo(this);
             i.on("change", (e) => {
                 e.stopPropagation()
-                self.setValue(i.val())
+                self.setValue(self.hasClass("nullvalue") ? null : i.val())
                 return false;
             }).on("keydown", function (e) {
-                if ((e.which == 8 || e.which == 46) && e.shiftKey)
+                if ((e.which == 8 || e.which == 46) && i.val() == "")
                 {
                     self.setValue(null)
                     self.doLayout();
@@ -110,10 +108,21 @@ class Cell extends Wdg
             }).on("mousedown touchstart", () => {
                 self.toggleClass("nullvalue", false)
             })
+            i.doLayout = function () {
+                const val = self.getValue();
+                self.toggleClass("nullvalue", val == null)
+                this.val(val)
+            }
 
         } else
-            new Html.Span().text(val).appendTo(this)
-
+        {
+            const d = new Html.Span().appendTo(this)
+            d.doLayout = function () {
+                const val = self.getValue();
+                self.toggleClass("nullvalue", val == null)
+                this.text(val)
+            }
+        }
     }
 }
 
@@ -123,37 +132,72 @@ class Row extends Html.Tr
 {
     constructor(props)
     {
-        super(props)
-        const {row, cols, edit, k} = this.props;
+        super({cellClass: Cell, ...props})
+        const {row, cols, edit, mods, k} = this.props;
 
         const self = this;
 
 
-        this.on("modrow", function (ev) {
-            self.doLayout();
-            self.getTable().trigger("modrow", self);
+        this.on("cellchange", function (ev) {
+            self.update();
         });
         this.on("click", function () {
             self.getTable().setCurrentRow(self);
         })
+        this.refresh();
     }
     mergeChanges()
     {
         this.props = {...this.props, ...this.props.mods[JSON.stringify(this.props.k)]}
         return this;
     }
-    doLayout()
+    refresh()
     {
-        this.mergeChanges()
-        const {row, cols, edit, mods, k, op, i} = this.props;
+        this.mergeChanges();
+        const {row, cols, edit, mods, k, op, i, cellClass} = this.props;
         this.removeAll()
         for (var col of cols)
-            new (col.cellClass || Cell)({row, col, edit, op, mods, i}).appendTo(this)
-        return super.doLayout()
+            new (col.cellClass || cellClass)({row, col, edit, op, mods, i}).appendTo(this)
     }
     getTable()
     {
         return this.parent(Table)
+    }
+    isModified()
+    {
+        const ks = JSON.stringify(this.props.k)
+        return !!this.props.mods[ks];
+    }
+    cancel()
+    {
+        const ks = JSON.stringify(this.props.k)
+        delete this.props.mods[ks];
+        this.trigger("rowchange", {}, {bubbles: true}).doLayout();
+    }
+    update()
+    {
+        if (this.props.op !== "INSERT")
+            this.props.op = "UPDATE"
+        const ks = JSON.stringify(this.props.k)
+        this.props.mods[ks] = {op: this.props.op, row: this.props.row, k: this.props.k};
+        this.trigger("rowchange", {}, {bubbles: true}).doLayout();
+    }
+    delete()
+    {
+        this.props.op = "DELETE"
+        const ks = JSON.stringify(this.props.k)
+        this.props.mods[ks] = {op: this.props.op, row: this.props.row, k: this.props.k};
+        this.trigger("rowchange", {}, {bubbles: true}).doLayout();
+    }
+    insert()
+    {
+        this.props.op = "INSERT"
+        var i = 0;
+        while (JSON.stringify(this.props.k = ["new", i]) in this.props.mods)
+            i++;
+        const ks = JSON.stringify(this.props.k)
+        this.props.mods[ks] = {op: this.props.op, row: this.props.row, k: this.props.k};
+        this.trigger("rowchange", {}, {bubbles: true}).doLayout();
     }
 }
 
@@ -184,21 +228,16 @@ class HeaderCell extends Cell
         this.text(col.name)
         new Sorter({col}).appendTo(this);
     }
-}
-
-class HeaderRow extends Row
-{
-
-    doLayout()
+    getValue()
     {
-        this.mergeChanges()
-        const {row, cols, edit, mods, k, op, i} = this.props;
-        this.removeAll()
-        for (var col of cols)
-            new HeaderCell({header: true, col, edit}).appendTo(this).doLayout();
-        return this;//super.doLayout()
+        return this.props.col.name
+    }
+    setValue()
+    {
+
     }
 }
+
 
 class RowHeaderCell extends Cell
 {
@@ -221,9 +260,22 @@ class RowHeaderCell extends Cell
     }
     formatCell()
     {
+
+    }
+    getValue()
+    {
+        return this.props.i
+    }
+    setValue()
+    {
+
+    }
+    doLayout()
+    {
         this.removeAll()
         this.text(this.props.i)
-        new Icon({UPDATE: "asterisk", INSERT: "plus", DELETE: "times"}[this.props.op] || "data").appendTo(this)
+        new Icon({UPDATE: "asterisk", INSERT: "plus", DELETE: "times"}[this.getRow().props.op] || "data").appendTo(this)
+        return super.doLayout();
     }
 }
 
@@ -250,20 +302,17 @@ export class DataTable extends Table
             return this;
         }
 
-        this.on("modrow", function (e) {
-
-            const tr = e.detail;
-            const ks = JSON.stringify(tr.props.k)
-            self.props.mods[ks] = {op: tr.props.op, row: tr.props.row,k:tr.props.k};
+        this.on("rowchange", function (e) {
+            self.modsresume.doLayout();
         })
     }
-    doLayout()
+    refresh()
     {
         const {rows, mods, pk, page, pageSize, edit} = this.props;
         const cols = this.getCols()
         const self = this;
         this.clear()
-        new HeaderRow({cols, edit, mods}).appendTo(this.head);
+        new Row({cols, edit, mods, cellClass: HeaderCell}).appendTo(this.head);
         var i = page * pageSize;
         for (var row of rows)
             new Row({row, cols, k: this.getKey(row), edit, i: i++, mods}).appendTo(this.body);
@@ -275,7 +324,7 @@ export class DataTable extends Table
     }
     async load()
     {
-        this.setCols([{name: "id", pk:1}, {name: "miao"}, {name: "bau"}, {name: "test", formatCell: function () {
+        this.setCols([{name: "id", pk: 1}, {name: "miao"}, {name: "bau"}, {name: "test", formatCell: function () {
                     this.text(JSON.stringify(this.props.row));
                 }}]);
         this.setRows([{ciao: 1, miao: 2, bau: 3}, {ciao: 2, miao: 2, bau: 3}, {ciao: 3, miao: 2, bau: 3}]);
@@ -284,7 +333,7 @@ export class DataTable extends Table
     }
     async save()
     {
-        this.props.mods={};
+        this.props.mods = {};
         this.doLayout();
     }
     getFormatCol()
@@ -314,9 +363,7 @@ export class DataTable extends Table
     }
     getCols()
     {
-        return [{cellClass: RowHeaderCell, virtual: true, name: "", sticky: 1}, ...this.props.cols, {name: "raw", virtual: true, formatCell: function () {
-                    new Html.Div().text(JSON.stringify(this.getRow().props)).appendTo(this.removeAll());
-                }}];
+        return [{cellClass: RowHeaderCell, virtual: true, name: "", sticky: 1}, ...this.props.cols];
     }
     setRows(rows)
     {
@@ -360,22 +407,17 @@ export class DataTable extends Table
     }
     async insertRow(row = {})
     {
-        var i = 0;
-        var k;
-        while (JSON.stringify(k = ["new", i]) in this.props.mods)
-            i++;
-        this.props.mods[JSON.stringify(k)] = {"op": "INSERT", row, k};
-        this.doLayout()
+        const {rows, cols, mods, pk, page, pageSize, edit} = this.props;
+        new Row({row, cols, edit, mods}).appendTo(this.body).insert();
+        this.refresh()
     }
     async deleteRow()
     {
-        const trc = this.getCurrentRow()
-        if (trc)
-        {
-            var {row, k} = trc.props;
-            this.props.mods[JSON.stringify(k)] = {"op": "DELETE", row, k};
-        }
-        this.doLayout();
+        const trc = this.getCurrentRow();
+        if (trc.isModified())
+            trc.cancel(), this.refresh();
+        else
+            trc.delete();
     }
     setCurrentRow(trc)
     {
@@ -476,13 +518,13 @@ class Sorter extends Html.Span
         switch (true)
         {
             case col.sort < 0:
-                col.sort=0
+                col.sort = 0
                 break;
             case col.sort > 0:
-                col.sort=-1
+                col.sort = -1
                 break;
             default:
-                col.sort=1
+                col.sort = 1
         }
         table.load();
     }
