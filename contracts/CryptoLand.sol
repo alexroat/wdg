@@ -76,7 +76,11 @@ contract CryptoLand {
     }
     
     function getFee() public returns (uint256) {
-        return (fee);
+        return fee;
+    }
+
+    function getFeeTest() external view returns (string memory) {
+        return greeting;
     }
     
     //land owner methods
