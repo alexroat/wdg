@@ -1,0 +1,25 @@
+{
+    "name": "cryptolandWeb",
+    "version": "1.0.0",
+    "keywords": [
+        "util",
+        "functional",
+        "server",
+        "client",
+        "browser"
+    ],
+    "author": "alex",
+    "contributors": [],
+    "dependencies": {
+        "jquery": "^3.6.0",
+        "web3": "^1.3.6"
+    },
+    "devDependencies": {
+        "ganache-cli": "^6.12.2",
+        "lite-server": "^2.6.1"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "lite-server --baseDir ./client"
+    }
+}
