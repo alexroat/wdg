@@ -28,16 +28,20 @@ contract CryptoLand {
     struct Land {
         address payable owner;
         uint256 price;
-        string name;
+        string content;
     }
     
     
     mapping(string=> Land) lands;
+    mapping(address=> string[]) properties;
     
     constructor() {
+        /*
         lands[""].owner=contractOwner;//payable(address(this));
         lands[""].price=1000000000000000000;
-        lands[""].name="global";
+        lands[""].content="";
+        properties[contractOwner].push("");
+        */
     }
     
     
@@ -47,71 +51,133 @@ contract CryptoLand {
         fee=fee1e32;
     }
     
+    event BuyEvent(string quad);
 
     //public methods
-    function buy(string memory quad) public payable {
-        require(lands[quad].owner!=address(0),_error_invalid_quad);
-        require(msg.value>getCost(quad),_error_insufficient_amount);
+    function buy(string memory quad) public payable  {
+        //require(lands[quad].owner!=address(0),_error_invalid_quad);
+        uint256 cost=getQuadCost(quad);
+        require(msg.value==cost,_error_insufficient_amount);
         lands[quad].owner.transfer(lands[quad].price);
-        contractOwner.transfer(getFee(quad));
-        payable(msg.sender).transfer(msg.value-getCost(quad));
+        contractOwner.transfer(cost-lands[quad].price);
         lands[quad].owner=payable(msg.sender);
+        updatePrice(quad,0);
+        emit BuyEvent(quad);
+    }
+
+    function getParent(string memory quad) public returns (string memory)
+    {
+        bytes memory bq= bytes(quad);
+        uint l=bq.length-1;
+        bytes memory result = new bytes(l);
+        for(uint i = 0; i < l; i++) {
+            result[i] = bq[i];
+        }
+        return string(result);
     }
     
-    
-    function lookup(string memory quad) public returns (address, string memory,uint256,uint256) {
-        require(lands[quad].owner!=address(0),_error_invalid_quad);
-        return (lands[quad].owner,lands[quad].name,lands[quad].price,getCost(quad));
+    function updatePrice(string memory quad,int256 delta) private{
+        lands[quad].price=uint256(int256(lands[quad].price)+delta);
+        if (bytes(quad).length>0)
+            updatePrice(getParent(quad),delta);
     }
+
     
-    function getFee(string memory quad) public returns (uint256)
+    
+    function getQuad(string memory quad) public returns (Land memory) {
+        //require(lands[quad].owner!=address(0),_error_invalid_quad);
+        return lands[quad];
+    }
+
+    function hello(string memory quad) public returns (string memory) {
+        return ("hello");
+    }
+
+    function getQuadFee(string memory quad) public returns (uint256)
     {
        return (lands[quad].price*fee)>>32;
     }
     
     
-    function getCost(string memory quad) public returns (uint256)
+    function getQuadCost(string memory quad) public returns (uint256)
     {
-       return lands[quad].price+getFee(quad);
+       return lands[quad].price+getQuadFee(quad);
     }
     
     function getFee() public returns (uint256) {
         return fee;
     }
 
-    function getFeeTest() external view returns (string memory) {
-        return greeting;
+    function setQuad(string memory quad,int256 price,string memory content) public returns  (Land memory) {
+        require(lands[quad].owner!=address(0),_error_invalid_quad);
+        require(lands[quad].owner==msg.sender,_error_quad_not_your_property);
+        int256 delta=int256(price)-int256(lands[quad].price);
+        updatePrice(quad,delta);
+        lands[quad].content=content;
+        return (lands[quad]);
     }
     
     //land owner methods
-    function setName(string memory quad,string memory name) public returns (address, uint256, string memory) {
+    function setContent(string memory quad,string memory content) public returns  (Land memory) {
         require(lands[quad].owner!=address(0),_error_invalid_quad);
         require(lands[quad].owner==msg.sender,_error_quad_not_your_property);
-        lands[quad].name=name;
-        return (lands[quad].owner,lands[quad].price,lands[quad].name);
+        lands[quad].content=content;
+        return (lands[quad]);
     }
     
-    function setPrice(string memory quad,uint32 price) public returns (address, uint256, string memory) {
-        require(lands[quad].owner!=address(0),_error_invalid_quad);
+    function setPrice(string memory quad,int256 price) public returns  (Land memory) {
+        //require(lands[quad].owner!=address(0),_error_invalid_quad);
         require(lands[quad].owner==msg.sender,_error_quad_not_your_property);
-        lands[quad].price=price;
-        return (lands[quad].owner,lands[quad].price,lands[quad].name);
+        int256 delta=int256(price)-int256(lands[quad].price);
+        updatePrice(quad,delta);
+        return (lands[quad]);
     }
     
-    function split(string memory quad) public returns (address, uint256, string memory) {
+    function split(string memory quad) public returns (Land memory) {
         require(lands[quad].owner!=address(0),_error_invalid_quad);
         require(lands[quad].owner==msg.sender,_error_quad_not_your_property);
         Land memory l;
         l.owner=lands[quad].owner;
         l.price=lands[quad].price/4;
-        l.name=lands[quad].name;
+        l.content=lands[quad].content;
         lands[string(abi.encodePacked(quad,"00"))]=l;
         lands[string(abi.encodePacked(quad,"01"))]=l;
         lands[string(abi.encodePacked(quad,"10"))]=l;
         lands[string(abi.encodePacked(quad,"11"))]=l;
         delete lands[quad];
-        return (lands[quad].owner,lands[quad].price,lands[quad].name);
+        return (lands[quad]);
+    }
+    
+    function split2(string memory quad) public  returns (Land memory) {
+        bytes memory alphabet = "0123456789abcdef";
+        bytes memory s="0";
+
+        Land memory lp=lands[quad];
+        uint price=lands[quad].price/4;
+        for (uint i=0; i<16; i++) {
+            Land memory l;
+            l.owner=lp.owner;
+            l.price=price;
+            l.content=lp.content;
+            s[0]=alphabet[i];
+            lands[string(abi.encodePacked(quad,string(s)))]=l;
+        }
+        return (lands[quad]);
+    }
+    
+    
+    function appendS(string memory quad,uint i) public returns (string memory) {
+        bytes memory alphabet = "0123456789abcdef";
+        bytes memory s="0";
+        s[0]=alphabet[i];
+       return string(abi.encodePacked(quad,string(s)));
+    }
+    
+    function getProperties(address o) public returns (string[] memory) {
+       return properties[o];
     }
 
-    
+   function getLand(string memory quad) public returns (Land memory) {
+       return lands[quad];
+    }
 }
