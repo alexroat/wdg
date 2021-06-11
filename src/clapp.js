@@ -192,6 +192,8 @@ class CLApp extends App
         return qm.path;
     }
 
+
+    static hashLogo="QmYWfLDunX369iAF24MwQ4LsNLj6L75sUayjY3vCEzdZCJ";
 }
 
 
@@ -307,7 +309,7 @@ class Uploader extends Wdg
 
     get hash()
     {
-        return this._hash;
+        return this._hash||CLApp.hashLogo;
     }
 
 }

@@ -14,6 +14,7 @@ contract CryptoLand {
     string constant _error_quad_not_your_property = "quad is not of your property!";
     string constant _error_insufficient_amount="insufficient amount!";
     uint256 public fee=4294967;//0.1% expressed as range in 2^32 -> 0.001*(1<<32)
+    string constant hashLogo = "QmYWfLDunX369iAF24MwQ4LsNLj6L75sUayjY3vCEzdZCJ";
     
     string public greeting = "hello";
     function sayHello() external view returns (string memory) {
@@ -30,6 +31,9 @@ contract CryptoLand {
         uint256 price;
         string content;
     }
+
+    Land landDefault;
+    
     
     
     mapping(string=> Land) lands;
@@ -42,6 +46,10 @@ contract CryptoLand {
         lands[""].content="";
         properties[contractOwner].push("");
         */
+
+        landDefault.owner=contractOwner;
+        landDefault.price=0;
+        landDefault.content=hashLogo;
     }
     
     
@@ -61,6 +69,8 @@ contract CryptoLand {
         lands[quad].owner.transfer(lands[quad].price);
         contractOwner.transfer(cost-lands[quad].price);
         lands[quad].owner=payable(msg.sender);
+        if (bytes(lands[quad].content).length == 0)
+            lands[quad].content=hashLogo;
         updatePrice(quad,0);
         emit BuyEvent(quad);
     }
@@ -86,7 +96,8 @@ contract CryptoLand {
     
     function getQuad(string memory quad) public returns (Land memory) {
         //require(lands[quad].owner!=address(0),_error_invalid_quad);
-        return lands[quad];
+        Land memory l=lands[quad];
+        return l.owner!=address(0)?l:landDefault;
     }
 
     function hello(string memory quad) public returns (string memory) {
