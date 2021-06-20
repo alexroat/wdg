@@ -90,6 +90,50 @@ you can find some useful info here: https://ethereum.stackexchange.com/a/45304
 You can fix it quickly doing going to Metamask options-> Advanced->Resume accounts
 
 
+## Working with ROPSTEN testnet
+For an overvew see this guide here:
+
+https://medium.com/coinmonks/5-minute-guide-to-deploying-smart-contracts-with-truffle-and-ropsten-b3e30d5ee1e
+
+Create a ropsten wallet in metamask
+
+Go to this faucet istance and "buy" some test ether posting you wallet address in your account.
+https://faucet.ropsten.be/
+
+After a while you should see the test ether appearing in your test wallet balance.
+
+Create an account in Infura
+
+Create a new (free) project in Infura, call it CryptoEarth
+
+Copy the PROJECT_ID that is you API KEY
+
+Test the Infura RPC with curl
+```bash
+curl https://mainnet.infura.io/v3/PROJECT_ID -X POST -H "Content-Type:application/json" -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":74}'
+```
+
+(replace PROJECT_ID with the correct ROPSTEN project ID from Infura project dashboard)
+
+You should get an answer like
+
+```
+{"jsonrpc":"2.0","id":74,"result":"0x#######"}
+```
+
+
+store the Infura Api Key in an enviromental variable (it is the PROJECT_ID)
+store the Metamask wallet in an environmental variable (it is the 12 word secret of you Metamask wallet)
+```
+export ROPSTEN_APIKEY=################################
+export ROPSTEN_MNEMONIC="#### #### #### #### #### #### #### #### #### #### #### ####"
+```
+
+Migrate the contract to Ropsten testnet with the npm script
+```bash
+npm run migrate-sc-ropsten
+```
+
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
