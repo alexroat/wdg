@@ -9,7 +9,7 @@ See there reference guide on how to install nodejs here: https://nodejs.org/en/d
 Clone the GIT repository from GITHUB:
 
 ```bash
-$ git clone https://github.com/alexroat/CryptoLand/tree/master
+$ git clone https://github.com/alexroat/CryptoLand.git
 ```
 
 Install all the dependencies
