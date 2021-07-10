@@ -37,6 +37,10 @@ contract CL {
     mapping(string=> Land) lands;
     mapping(address=> string[]) properties;
     
+    //Declare an Event
+    event BuyEvent(string quad);
+    
+    
     constructor() {
         /*lands[""].owner=contractOwner;//payable(address(this));
         lands[""].price=0;
@@ -110,6 +114,8 @@ contract CL {
         lands[quad].owner.transfer(lands[quad].price);
         contractOwner.transfer(cost-lands[quad].price);
         lands[quad].owner=payable(msg.sender);
+        //Emit an event
+        emit BuyEvent(quad);
     }
     
     

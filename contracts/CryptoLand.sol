@@ -14,7 +14,6 @@ contract CryptoLand {
     string constant _error_quad_not_your_property = "quad is not of your property!";
     string constant _error_insufficient_amount="insufficient amount!";
     uint256 public fee=4294967;//0.1% expressed as range in 2^32 -> 0.001*(1<<32)
-    string constant hashLogo = "QmYWfLDunX369iAF24MwQ4LsNLj6L75sUayjY3vCEzdZCJ";
     
     string public greeting = "hello";
     function sayHello() external view returns (string memory) {
@@ -31,9 +30,6 @@ contract CryptoLand {
         uint256 price;
         string content;
     }
-
-    Land landDefault;
-    
     
     
     mapping(string=> Land) lands;
@@ -46,10 +42,6 @@ contract CryptoLand {
         lands[""].content="";
         properties[contractOwner].push("");
         */
-
-        landDefault.owner=contractOwner;
-        landDefault.price=0;
-        landDefault.content=hashLogo;
     }
     
     
@@ -69,13 +61,11 @@ contract CryptoLand {
         lands[quad].owner.transfer(lands[quad].price);
         contractOwner.transfer(cost-lands[quad].price);
         lands[quad].owner=payable(msg.sender);
-        if (bytes(lands[quad].content).length == 0)
-            lands[quad].content=hashLogo;
         updatePrice(quad,0);
         emit BuyEvent(quad);
     }
 
-    function getParent(string memory quad) public returns (string memory)
+    function getParent(string memory quad) public pure returns (string memory)
     {
         bytes memory bq= bytes(quad);
         uint l=bq.length-1;
@@ -94,28 +84,24 @@ contract CryptoLand {
 
     
     
-    function getQuad(string memory quad) public returns (Land memory) {
+    function getQuad(string memory quad) public view returns (Land memory) {
         //require(lands[quad].owner!=address(0),_error_invalid_quad);
-        Land memory l=lands[quad];
-        return l.owner!=address(0)?l:landDefault;
+        return lands[quad];
     }
 
-    function hello(string memory quad) public returns (string memory) {
-        return ("hello");
-    }
 
-    function getQuadFee(string memory quad) public returns (uint256)
+    function getQuadFee(string memory quad) public view  returns (uint256)
     {
        return (lands[quad].price*fee)>>32;
     }
     
     
-    function getQuadCost(string memory quad) public returns (uint256)
+    function getQuadCost(string memory quad) public view returns (uint256)
     {
        return lands[quad].price+getQuadFee(quad);
     }
     
-    function getFee() public returns (uint256) {
+    function getFee() public view returns (uint256) {
         return fee;
     }
 
@@ -177,18 +163,18 @@ contract CryptoLand {
     }
     
     
-    function appendS(string memory quad,uint i) public returns (string memory) {
+    function appendS(string memory quad,uint i) public pure returns (string memory) {
         bytes memory alphabet = "0123456789abcdef";
         bytes memory s="0";
         s[0]=alphabet[i];
        return string(abi.encodePacked(quad,string(s)));
     }
     
-    function getProperties(address o) public returns (string[] memory) {
+    function getProperties(address o) public view returns (string[] memory) {
        return properties[o];
     }
 
-   function getLand(string memory quad) public returns (Land memory) {
+   function getLand(string memory quad) public view returns (Land memory) {
        return lands[quad];
     }
 }

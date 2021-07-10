@@ -122,11 +122,13 @@ You should get an answer like
 ```
 
 
-store the Infura Api Key in an enviromental variable (it is the PROJECT_ID)
-store the Metamask wallet in an environmental variable (it is the 12 word secret of you Metamask wallet)
+store the Infura Api Key in ROPSTEN_APIKEY enviromental variable (it is the PROJECT_ID)
+store the Metamask wallet in ROPSTEN_MNEMONIC environmental variable (it is the 12 word secret of you Metamask wallet)
+store the Metamask Ropsten account (with funds) in ROPSTEN_ACCOUNT enviromental variable
 ```
 export ROPSTEN_APIKEY=################################
 export ROPSTEN_MNEMONIC="#### #### #### #### #### #### #### #### #### #### #### ####"
+export ROPSTEN_ACCOUNT=################################
 ```
 
 Migrate the contract to Ropsten testnet with the npm script

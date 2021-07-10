@@ -11,6 +11,7 @@
     "author": "alex",
     "contributors": [],
     "dependencies": {
+        "@truffle/hdwallet-provider": "^1.4.1",
         "assert": "^2.0.0",
         "crypto-browserify": "^3.12.0",
         "ipfs": "^0.55.3",
@@ -20,7 +21,6 @@
         "os-browserify": "^0.3.0",
         "source-map-loader": "^3.0.0",
         "stream-browserify": "^3.0.0",
-        "truffle-hdwallet-provider": "^1.0.17",
         "w3-css": "^4.1.0",
         "web3": "^1.3.6"
     },
@@ -41,7 +41,7 @@
         "start": "lite-server --baseDir ./client",
         "build-fe": "webpack",
         "migrate-sc-dev": "truffle migrate --reset --network development",
-        "migrate-sc-ropsten":"truffle migrate --reset --network ropsten",
+        "migrate-sc-ropsten": "truffle migrate --reset --network ropsten",
         "start-testnet": "ganache-cli --seed ciao"
     }
 }

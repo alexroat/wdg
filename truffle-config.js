@@ -1,7 +1,6 @@
-var HDWalletProvider = require("truffle-hdwallet-provider");
+var HDWalletProvider = require("@truffle/hdwallet-provider");
 
 
-console.log(process.env.ROPSTEN_MNEMONIC)
 
 /**
  * Use this file to configure your truffle project. It's seeded with some
@@ -91,11 +90,14 @@ module.exports = {
         
         ropsten: {
             provider: function() {
-              return new HDWalletProvider(process.env.ROPSTEN_MNEMONIC, "https://ropsten.infura.io/"+process.env.ROPSTEN_APIKEY)
+              return new HDWalletProvider(process.env.ROPSTEN_MNEMONIC, "https://ropsten.infura.io/v3/"+process.env.ROPSTEN_APIKEY)
             },
             network_id: 3,
             gas: 4000000,      //make sure this gas allocation isn't over 4M, which is the max
-            networkCheckTimeout: 1000000000,
+            confirmations: 2,
+            timeoutBlocks: 200,
+            networkCheckTimeout: 10000000,
+            from:process.env.ROPSTEN_ACCOUNT,
           }
     },
 
