@@ -96,7 +96,7 @@ export class Demo extends App
         super(props)
         const self = this;
         this.sidebar = new SideBar().appendTo(this);
-        this.header = new Icon({icons: "bars"}).appendTo(this, {w: 30}).on("click", function () {
+        this.header = new Icon({icon: "bars"}).appendTo(this, {w: 30}).on("click", function () {
             self.sidebar.toggle();
         });
         this.main = new TabbedView().appendTo(this, {p: 1});
