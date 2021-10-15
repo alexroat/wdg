@@ -4,7 +4,7 @@ const webpack = require('webpack')
 module.exports = {
     entry: [
         'jquery',
-        './src/clapp.js', ],
+        './src/ceapp.js', ],
     output: {
         filename: 'main.js',
         path: path.resolve(__dirname, 'client/dist'),

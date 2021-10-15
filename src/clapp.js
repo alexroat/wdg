@@ -77,7 +77,10 @@ class CLApp extends App
     {
         super()
         this.map = new CLMap("#mapid");
+        this.info=new QuadInfo();
+        this.info.el.appendTo(this.el);
     }
+
 
     async w3init()
     {
@@ -310,6 +313,25 @@ class Uploader extends Wdg
     get hash()
     {
         return this._hash||CLApp.hashLogo;
+    }
+
+}
+
+
+
+class QuadInfo extends Wdg
+{
+    constructor(info)
+    {
+        super('<div class="w3-panel w3-bottom w3-red" style="height:40%"/>');
+        this.info=info;
+        this.refresh()
+    }
+
+    refresh()
+    {
+        this.el.empty()
+        $("<div/>").text(this.info).appendTo(this.el);
     }
 
 }
